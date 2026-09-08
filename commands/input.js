@@ -1,4 +1,4 @@
-const { setProfileBackground, setProfileBio, getPoints } = require("./whellevi");
+const { setProfileBackground, setProfileBio, getPoints, getRoleSpending } = require("./whellevi");
 
 const URL_PATTERN = /^https?:\/\/\S+$/i;
 
@@ -9,21 +9,10 @@ async function handleInputCommand(message) {
     const isBackgroundCommand = ["!addinput", "addinput"].includes(command);
     if (!isBioCommand && !isBackgroundCommand) return false;
 
-    const memberRoles = message.member?.roles.cache.map(role => role.name.toUpperCase()) || [];
-    if (!memberRoles.includes("WHELL") && !memberRoles.includes("LEVIA") && !memberRoles.includes("LEVIATHAN")) {
-        await message.reply("Command ini khusus member dengan role WHELL atau LEVIA.");
-        return true;
-    }
-
     if (isBioCommand) {
         const bio = parts.slice(1).join(" ").trim();
         if (!bio || bio.length > 120) {
             await message.reply("Bio harus berisi 1-120 karakter. Gunakan: `!addinputbio bio kamu`");
-            return true;
-        }
-        const points = getPoints()[message.author.id];
-        if (!points || (!points.whellRp && !points.leviaRp)) {
-            await message.reply("Kamu belum memiliki spending yang tercatat.");
             return true;
         }
         setProfileBio(message.author.id, message.author.username, bio);
@@ -31,15 +20,17 @@ async function handleInputCommand(message) {
         return true;
     }
 
-    const backgroundUrl = parts[1];
-    if (!backgroundUrl || !URL_PATTERN.test(backgroundUrl)) {
-        await message.reply("Gunakan: `!addinput https://domain.com/gambar-atau-gif`.");
+    const memberRoles = message.member?.roles.cache.map(role => role.name) || [];
+    const points = getPoints()[message.author.id] || {};
+    const theme = getRoleSpending(points, memberRoles);
+    if (!theme || theme.amount < 10000000) {
+        await message.reply("Background GIF/foto hanya bisa diinput setelah mencapai tema 3 dengan spending minimal 10.000.000.");
         return true;
     }
 
-    const points = getPoints()[message.author.id];
-    if (!points || (!points.whellRp && !points.leviaRp)) {
-        await message.reply("Kamu belum memiliki spending yang tercatat.");
+    const backgroundUrl = parts[1];
+    if (!backgroundUrl || !URL_PATTERN.test(backgroundUrl)) {
+        await message.reply("Gunakan: `!addinput https://domain.com/gambar-atau-gif`.");
         return true;
     }
 
