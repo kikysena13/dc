@@ -53,7 +53,7 @@ function setProfileBio(userId, username, bio) {
 function getRoleSpending(points, roles, preferredRole = null) {
 	const normalizedPreferredRole = normalizeRole(preferredRole);
 	const role = normalizedPreferredRole
-		? roles.find(name => normalizeRole(name) === normalizedPreferredRole)
+		? roles.find(name => normalizeRole(name) === normalizedPreferredRole || (normalizedPreferredRole === "LEVIA" && normalizeRole(name) === "LEVIATHAN"))
 		: roles.find(name => ["WHELL", "LEVIA", "LEVIATHAN"].includes(normalizeRole(name)));
 	if (!role) return null;
 	const isWhell = normalizeRole(role) === "WHELL";
