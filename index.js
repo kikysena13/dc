@@ -65,6 +65,15 @@ function getDashboardMembers() {
             const activity = getMemberActivity(member.id);
             const chatXp = activity.chatMessages || 0;
             const voiceXp = activity.voiceMinutes || 0;
+            const memberPoints = points[member.id] || {};
+            const roleNames = member.roles.cache
+                .filter(role => role.name !== "@everyone")
+                .map(role => role.name.toUpperCase());
+            const inferredRole = roleNames.includes("WHELL")
+                ? "WHELL"
+                : roleNames.includes("LEVIA") || roleNames.includes("LEVIATHAN")
+                    ? "LEVIA"
+                    : null;
             return {
                 id: member.id,
                 username: member.user.username,
@@ -72,16 +81,16 @@ function getDashboardMembers() {
                 avatar: member.user.displayAvatarURL({ dynamic: false, size: 64 }),
                 status: member.presence?.status || "offline",
                 joinedAt: member.joinedAt,
-                roles: member.roles.cache
-                    .filter(role => role.name !== "@everyone")
-                    .map(role => role.name),
-                whellRp: points[member.id]?.whellRp || 0,
-                leviaRp: points[member.id]?.leviaRp || 0,
-                whellCurrency: points[member.id]?.whellCurrency || "$",
-                leviaCurrency: points[member.id]?.leviaCurrency || "$",
-                bio: points[member.id]?.bio || "",
-                whellTheme: spendingPoints.getRoleSpending(points[member.id] || {}, member.roles.cache.map(role => role.name), "WHELL"),
-                leviaTheme: spendingPoints.getRoleSpending(points[member.id] || {}, member.roles.cache.map(role => role.name), "LEVIA"),
+                roles: roleNames,
+                role: inferredRole,
+                whellRp: memberPoints.whellRp || 0,
+                leviaRp: memberPoints.leviaRp || 0,
+                whellCurrency: memberPoints.whellCurrency || "$",
+                leviaCurrency: memberPoints.leviaCurrency || "$",
+                spendingRole: memberPoints.role || inferredRole,
+                bio: memberPoints.bio || "",
+                whellTheme: spendingPoints.getRoleSpending(memberPoints || {}, roleNames, "WHELL"),
+                leviaTheme: spendingPoints.getRoleSpending(memberPoints || {}, roleNames, "LEVIA"),
                 level: Math.floor((chatXp + voiceXp) / 100),
                 xp: chatXp + voiceXp,
                 chatXp,

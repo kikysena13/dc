@@ -128,6 +128,7 @@ async function handleWhellLeviCommand(message) {
 		memberPoints.leviaRp = 0;
 		memberPoints.whellCurrency = "$";
 		memberPoints.leviaCurrency = "$";
+		memberPoints.role = null;
 		memberPoints.username = target.user.username;
 		points[target.id] = memberPoints;
 		writePoints(points);
@@ -169,6 +170,7 @@ async function handleWhellLeviCommand(message) {
 		memberPoints[`${roleName === "WHELL" ? "whell" : "levia"}Currency`] = currency;
 	}
 
+	memberPoints.role = roleName;
 	memberPoints.username = target.user.username;
 	points[target.id] = memberPoints;
 	writePoints(points);

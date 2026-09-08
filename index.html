@@ -973,8 +973,7 @@
             <nav aria-label="Navigasi utama">
                 <button class="nav-item active"><span class="nav-icon">⌂</span><span>Main</span></button>
                 <button class="nav-item"><span class="nav-icon">♛</span><span>Leaderboard</span></button>
-                <button class="nav-item" data-role-filter="WHELL"><span class="nav-icon">◉</span><span>Top Whell</span></button>
-                <button class="nav-item" data-role-filter="LEVIA"><span class="nav-icon">◷</span><span>Top Levia</span></button>
+                <button class="nav-item" data-role-filter="SPENDING"><span class="nav-icon">◉</span><span>Top Whell &amp; Levia</span></button>
                 <button class="nav-item"><span class="nav-icon">◷</span><span>Riwayat Musim</span></button>
 
             </nav>
@@ -1070,7 +1069,7 @@
                                     <th>Member</th>
                                     <th id="member-title-heading">Level</th>
                                     <th id="spending-heading">Total XP</th>
-                                    <th>Progress level</th>
+                                    <th id="progress-title-heading">Progress level</th>
                                 </tr>
                             </thead>
                             <tbody id="leaderboard-body"></tbody>
@@ -1087,7 +1086,15 @@
         const formatXp = (value) => new Intl.NumberFormat('id-ID').format(value);
         const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
         let selectedRole = null;
-        const getVisibleMembers = () => selectedRole
+        const getSpendingRole = (member) => member.spendingRole === 'WHELL' || member.spendingRole === 'LEVIA'
+            ? member.spendingRole
+            : member.whellRp > 0 ? 'WHELL' : member.leviaRp > 0 ? 'LEVIA' : null;
+        const getVisibleMembers = () => selectedRole === 'SPENDING'
+            ? PREVIEW_DATA.members.filter((member) => member.roles.some((role) => {
+                const normalizedRole = role.toUpperCase();
+                return normalizedRole === 'WHELL' || normalizedRole === 'LEVIA' || normalizedRole === 'LEVIATHAN';
+            }))
+            : selectedRole
             ? PREVIEW_DATA.members.filter((member) => member.roles.some((role) => {
                 const normalizedRole = role.toUpperCase();
                 return selectedRole === 'LEVIA'
@@ -1096,31 +1103,47 @@
             }))
             : PREVIEW_DATA.members;
         const sortedMembers = (filter) => {
-            const xpField = selectedRole === 'WHELL'
+            const xpField = selectedRole === 'SPENDING'
+                ? null
+                : selectedRole === 'WHELL'
                 ? 'whellRp'
                 : selectedRole === 'LEVIA'
                     ? 'leviaRp'
                     : filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp';
-            return [...getVisibleMembers()].sort((a, b) => b[xpField] - a[xpField]);
+            return [...getVisibleMembers()].sort((a, b) => {
+                if (selectedRole === 'SPENDING') {
+                    const aRole = getSpendingRole(a);
+                    const bRole = getSpendingRole(b);
+                    return (bRole === 'WHELL' ? b.whellRp : b.leviaRp) - (aRole === 'WHELL' ? a.whellRp : a.leviaRp);
+                }
+                return b[xpField] - a[xpField];
+            });
         };
         const renderLeaderboard = (filter = 'overall') => {
             const members = sortedMembers(filter);
             document.getElementById('leaderboard-body').innerHTML = members.map((member, index) => {
-                const xp = selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp'];
+                const spendingRole = getSpendingRole(member);
+                const xp = selectedRole === 'SPENDING'
+                    ? spendingRole === 'WHELL' ? member.whellRp : member.leviaRp
+                    : selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp'];
                 const activityLabel = filter === 'chat' ? 'pesan' : filter === 'voice' ? 'menit' : 'poin';
-                const value = selectedRole ? `${member[selectedRole === 'WHELL' ? 'whellCurrency' : 'leviaCurrency'] === 'RP' ? 'Rp ' : '$'}${formatXp(xp)}` : `${formatXp(xp)} <small>${activityLabel}</small>`;
+                const value = selectedRole ? `${member[(selectedRole === 'WHELL' || spendingRole === 'WHELL') ? 'whellCurrency' : 'leviaCurrency'] === 'RP' ? 'Rp ' : '$'}${formatXp(xp)}` : `${formatXp(xp)} <small>${activityLabel}</small>`;
                 const title = selectedRole ? member.bio || 'Belum ada bio' : `LVL ${member.level}`;
-                const theme = selectedRole === 'WHELL' ? member.whellTheme : selectedRole === 'LEVIA' ? member.leviaTheme : null;
+                const theme = selectedRole === 'WHELL' || (selectedRole === 'SPENDING' && spendingRole === 'WHELL') ? member.whellTheme : selectedRole === 'LEVIA' || (selectedRole === 'SPENDING' && spendingRole === 'LEVIA') ? member.leviaTheme : null;
                 const themeClass = theme ? ` profile-theme theme-${theme.tier}` : '';
                 const themeStyle = ['exclusive', 'custom'].includes(theme?.tier) && theme.background ? ` style="background-image:linear-gradient(90deg,rgba(17,15,14,.94),rgba(17,15,14,.68),rgba(17,15,14,.8)),url('${escapeHtml(theme.background).replace(/'/g, '%27')}')"` : '';
-                return `<tr class="${themeClass.trim()}"${themeStyle}><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${escapeHtml(member.avatar)}" alt="Avatar ${escapeHtml(member.username)}"><div><strong>${escapeHtml(member.username)}</strong><span>ID ${escapeHtml(member.id)}</span></div></div></td><td>${escapeHtml(title)}</td><td class="xp">${value}</td><td><div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${selectedRole ? 'Total spending' : `${member.progress}% menuju level berikutnya`}</span></div></td></tr>`;
+                const roleLabel = spendingRole === 'WHELL' ? 'WHELL' : spendingRole === 'LEVIA' ? 'LEVIA' : '';
+                const finalTitle = selectedRole === 'SPENDING' ? roleLabel : title;
+                const progressCell = selectedRole ? `<span class="level">${escapeHtml(finalTitle)}</span>` : `<div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${member.progress}% menuju level berikutnya</span></div>`;
+                return `<tr class="${themeClass.trim()}"${themeStyle}><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${escapeHtml(member.avatar)}" alt="Avatar ${escapeHtml(member.username)}"><div><strong>${escapeHtml(member.username)}</strong><span>ID ${escapeHtml(member.id)}</span></div></div></td><td>${escapeHtml(title)}</td><td class="xp">${value}</td><td>${progressCell}</td></tr>`;
             }).join('');
         };
         const renderPodium = () => {
             const members = sortedMembers('overall').slice(0, 3);
             document.getElementById('podium').innerHTML = members.map((member, index) => {
-                const points = selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member.xp;
-                const currency = selectedRole === 'WHELL' ? member.whellCurrency : member.leviaCurrency;
+                const spendingRole = getSpendingRole(member);
+                const points = selectedRole === 'SPENDING' ? spendingRole === 'WHELL' ? member.whellRp : member.leviaRp : selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member.xp;
+                const currency = selectedRole === 'SPENDING' ? spendingRole === 'WHELL' ? member.whellCurrency : member.leviaCurrency : selectedRole === 'WHELL' ? member.whellCurrency : member.leviaCurrency;
                 return `<div class="podium-item"><img class="avatar podium-avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div class="podium-name">${member.username}</div><div class="podium-xp">${selectedRole ? currency === 'RP' ? 'Rp ' : '$' : ''}${formatXp(points)}${selectedRole ? '' : ' XP'}</div><div class="podium-rank">${index + 1}</div></div>`;
             }).join('');
         };
@@ -1140,8 +1163,9 @@
             selectedRole = button.dataset.roleFilter || null;
             document.getElementById('member-title-heading').textContent = selectedRole ? 'Bio' : 'Level';
             document.getElementById('spending-heading').textContent = selectedRole ? 'Spending' : 'Total XP';
-            document.getElementById('leaderboard-title').textContent = selectedRole ? `Top ${selectedRole === 'WHELL' ? 'Whell' : 'Levia'}` : 'Leaderboard keaktifan';
-            document.getElementById('leaderboard-subtitle').textContent = selectedRole ? `Member dengan role ${selectedRole}` : 'Peringkat berdasarkan aktivitas chat dan voice';
+            document.getElementById('progress-title-heading').textContent = selectedRole === 'SPENDING' ? 'Role' : 'Progress level';
+            document.getElementById('leaderboard-title').textContent = selectedRole === 'SPENDING' ? 'Top Whell & Levia' : selectedRole ? `Top ${selectedRole === 'WHELL' ? 'Whell' : 'Levia'}` : 'Leaderboard keaktifan';
+            document.getElementById('leaderboard-subtitle').textContent = selectedRole === 'SPENDING' ? 'Peringkat berdasarkan total spending' : selectedRole ? `Member dengan role ${selectedRole}` : 'Peringkat berdasarkan aktivitas chat dan voice';
             renderPodium();
             renderLeaderboard(document.querySelector('.filter.active').dataset.filter);
             document.getElementById('leaderboard').scrollIntoView({ behavior: 'smooth' });
