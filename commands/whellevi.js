@@ -8,6 +8,7 @@ const ROLE_NAMES = {
 	LEVIATHAN: "leviaRp"
 };
 const CURRENCY_NAMES = new Set(["RP", "$"]);
+const USD_TO_RP = 50000000 / 3000;
 const THEME_THRESHOLDS = {
 	exclusive: 30000000,
 	custom: 15000000,
@@ -59,11 +60,12 @@ function getRoleSpending(points, roles, preferredRole = null) {
 	const isWhell = normalizeRole(role) === "WHELL";
 	const amount = isWhell ? points.whellRp || 0 : points.leviaRp || 0;
 	const currency = isWhell ? points.whellCurrency || "$" : points.leviaCurrency || "$";
-	if (amount < THEME_THRESHOLDS.silver) return null;
+	const normalizedAmount = currency === "RP" ? amount : amount * USD_TO_RP;
+	if (normalizedAmount < THEME_THRESHOLDS.silver) return null;
 	let tier = "silver";
-	if (amount >= THEME_THRESHOLDS.exclusive) tier = "exclusive";
-	else if (amount >= THEME_THRESHOLDS.custom) tier = "custom";
-	return { role: normalizeRole(role), amount, currency, tier, background: points.profileBackground || "" };
+	if (normalizedAmount >= THEME_THRESHOLDS.exclusive) tier = "exclusive";
+	else if (normalizedAmount >= THEME_THRESHOLDS.custom) tier = "custom";
+	return { role: normalizeRole(role), amount, normalizedAmount, currency, tier, background: points.profileBackground || "" };
 }
 
 function normalizeRole(value) {

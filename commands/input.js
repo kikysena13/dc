@@ -23,7 +23,7 @@ async function handleInputCommand(message) {
     const memberRoles = message.member?.roles.cache.map(role => role.name) || [];
     const points = getPoints()[message.author.id] || {};
     const theme = getRoleSpending(points, memberRoles);
-    if (!theme || theme.amount < 10000000) {
+    if (!theme || theme.normalizedAmount < 10000000) {
         await message.reply("Background GIF/foto hanya bisa diinput setelah mencapai tema 3 dengan spending minimal 10.000.000.");
         return true;
     }
