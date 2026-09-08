@@ -1,7 +1,7 @@
 const Discord = require("discord.js");
 
 function getWebsiteUrl() {
-	return process.env.WEBSITE_URL || "http://localhost:3000";
+	return process.env.WEBSITE_URL || "https://kikysena13.github.io/dc/";
 }
 
 function createWebsiteEmbed() {
