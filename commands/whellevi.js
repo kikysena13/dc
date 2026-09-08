@@ -8,6 +8,10 @@ const ROLE_NAMES = {
 	LEVIATHAN: "leviaRp"
 };
 const CURRENCY_NAMES = new Set(["RP", "$"]);
+const THEME_THRESHOLDS = {
+	exclusive: 1000000,
+	custom: 500000
+};
 
 function readPoints() {
 	try {
@@ -25,6 +29,27 @@ function writePoints(points) {
 
 function getPoints() {
 	return readPoints();
+}
+
+function setProfileBackground(userId, username, backgroundUrl) {
+	const points = readPoints();
+	const memberPoints = points[userId] || { username, whellRp: 0, leviaRp: 0 };
+	memberPoints.username = username;
+	memberPoints.profileBackground = backgroundUrl;
+	points[userId] = memberPoints;
+	writePoints(points);
+}
+
+function getRoleSpending(points, roles) {
+	const role = roles.find(name => ["WHELL", "LEVIA", "LEVIATHAN"].includes(normalizeRole(name)));
+	if (!role) return null;
+	const isWhell = normalizeRole(role) === "WHELL";
+	const amount = isWhell ? points.whellRp || 0 : points.leviaRp || 0;
+	const currency = isWhell ? points.whellCurrency || "$" : points.leviaCurrency || "$";
+	let tier = "silver";
+	if (amount >= THEME_THRESHOLDS.exclusive) tier = "exclusive";
+	else if (amount >= THEME_THRESHOLDS.custom && points.profileBackground) tier = "custom";
+	return { role: normalizeRole(role), amount, currency, tier, background: points.profileBackground || "" };
 }
 
 function normalizeRole(value) {
@@ -117,4 +142,4 @@ async function handleWhellLeviCommand(message) {
 	return true;
 }
 
-module.exports = { handleWhellLeviCommand, getPoints };
+module.exports = { handleWhellLeviCommand, getPoints, setProfileBackground, getRoleSpending, THEME_THRESHOLDS };

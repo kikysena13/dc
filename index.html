@@ -866,6 +866,31 @@
             .level { border-radius: 2px; }
         .dummy-note { border-radius: 2px; }
 
+        tbody tr.profile-theme {
+            position: relative;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        tbody tr.profile-theme td:first-child { border-left: 2px solid transparent; }
+        tbody tr.profile-theme td { position: relative; z-index: 1; }
+        tbody tr.theme-exclusive {
+            background: linear-gradient(100deg, rgba(255, 196, 76, .2), rgba(217, 91, 255, .12), rgba(68, 218, 255, .16), rgba(255, 111, 133, .14));
+            box-shadow: inset 0 0 24px rgba(255, 204, 92, .12), 0 0 14px rgba(255, 192, 72, .14);
+        }
+        tbody tr.theme-exclusive td:first-child { border-left-color: #f2c45f; }
+        tbody tr.theme-exclusive td { border-bottom-color: rgba(242, 196, 95, .3); }
+        tbody tr.theme-custom {
+            background-color: rgba(17, 15, 14, .72);
+            background-image: linear-gradient(90deg, rgba(17, 15, 14, .94), rgba(17, 15, 14, .68), rgba(17, 15, 14, .8));
+            background-size: cover;
+            background-position: center;
+            box-shadow: inset 0 0 0 1px rgba(227, 165, 95, .5), inset 0 0 22px rgba(0, 0, 0, .5);
+        }
+        tbody tr.theme-custom td:first-child { border-left-color: var(--cyan); }
+        tbody tr.theme-silver {
+            box-shadow: inset 0 0 0 1px rgba(213, 220, 230, .28), inset 0 0 18px rgba(194, 205, 221, .1), 0 0 10px rgba(208, 218, 232, .1);
+        }
+        tbody tr.theme-silver td:first-child { border-left-color: #cbd4df; }
+
         @media (max-width: 700px) {
             .sidebar {
                 height: auto;
@@ -1053,6 +1078,7 @@
         let PREVIEW_DATA = { members: [] };
 
         const formatXp = (value) => new Intl.NumberFormat('id-ID').format(value);
+        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
         let selectedRole = null;
         const getVisibleMembers = () => selectedRole
             ? PREVIEW_DATA.members.filter((member) => member.roles.some((role) => {
@@ -1077,7 +1103,10 @@
                 const activityLabel = filter === 'chat' ? 'pesan' : filter === 'voice' ? 'menit' : 'poin';
                 const value = selectedRole ? `${member[selectedRole === 'WHELL' ? 'whellCurrency' : 'leviaCurrency'] === 'RP' ? 'Rp ' : '$'}${formatXp(xp)}` : `${formatXp(xp)} <small>${activityLabel}</small>`;
                 const title = selectedRole ? member.displayName || member.username : `LVL ${member.level}`;
-                return `<tr><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div><strong>${member.username}</strong><span>ID ${member.id}</span></div></div></td><td>${title}</td><td class="xp">${value}</td><td><div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${selectedRole ? 'Total spending' : `${member.progress}% menuju level berikutnya`}</span></div></td></tr>`;
+                const theme = selectedRole ? member.theme : null;
+                const themeClass = theme ? ` profile-theme theme-${theme.tier}` : '';
+                const themeStyle = theme?.tier === 'custom' && theme.background ? ` style="background-image:linear-gradient(90deg,rgba(17,15,14,.94),rgba(17,15,14,.68),rgba(17,15,14,.8)),url('${escapeHtml(theme.background).replace(/'/g, '%27')}')"` : '';
+                return `<tr class="${themeClass.trim()}"${themeStyle}><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${escapeHtml(member.avatar)}" alt="Avatar ${escapeHtml(member.username)}"><div><strong>${escapeHtml(member.username)}</strong><span>ID ${escapeHtml(member.id)}</span></div></div></td><td>${escapeHtml(title)}</td><td class="xp">${value}</td><td><div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${selectedRole ? 'Total spending' : `${member.progress}% menuju level berikutnya`}</span></div></td></tr>`;
             }).join('');
         };
         const renderPodium = () => {

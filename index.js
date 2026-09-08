@@ -15,6 +15,7 @@ const { handleTaskCommand } = require("./commands/tasks");
 const { handleWebCommand } = require("./commands/web");
 const { handleWhellLeviCommand } = require("./commands/whellevi");
 const spendingPoints = require("./commands/whellevi");
+const { handleInputCommand } = require("./commands/input");
 const { getMemberActivity, recordChatMessage, recordVoiceStateChange } = require("./commands/activity");
 
 // ===== GLOBAL ERROR HANDLERS =====
@@ -78,6 +79,7 @@ function getDashboardMembers() {
                 leviaRp: points[member.id]?.leviaRp || 0,
                 whellCurrency: points[member.id]?.whellCurrency || "$",
                 leviaCurrency: points[member.id]?.leviaCurrency || "$",
+                theme: spendingPoints.getRoleSpending(points[member.id] || {}, member.roles.cache.map(role => role.name)),
                 level: Math.floor((chatXp + voiceXp) / 100),
                 xp: chatXp + voiceXp,
                 chatXp,
@@ -222,6 +224,7 @@ client.on('messageCreate', async (message) => {
     if (await handleTaskCommand(message)) return;
     if (await handleWebCommand(message)) return;
     if (await handleWhellLeviCommand(message)) return;
+    if (await handleInputCommand(message)) return;
 
     if (message.content.toLowerCase() === "test") {
         message.reply("Test successful!").catch(err => console.error(err));
