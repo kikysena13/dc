@@ -90,6 +90,12 @@ function getDashboardMembers() {
 function startDashboardServer() {
     const dashboardFile = path.join(__dirname, "index.html");
     const server = http.createServer((request, response) => {
+        if (request.url === "/health") {
+            response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+            response.end(JSON.stringify({ status: "ok" }));
+            return;
+        }
+
         if (request.url === "/api/leaderboard") {
             try {
                 const members = getDashboardMembers();
