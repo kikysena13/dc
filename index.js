@@ -79,6 +79,7 @@ function getDashboardMembers() {
                 leviaRp: points[member.id]?.leviaRp || 0,
                 whellCurrency: points[member.id]?.whellCurrency || "$",
                 leviaCurrency: points[member.id]?.leviaCurrency || "$",
+                bio: points[member.id]?.bio || "",
                 theme: spendingPoints.getRoleSpending(points[member.id] || {}, member.roles.cache.map(role => role.name)),
                 level: Math.floor((chatXp + voiceXp) / 100),
                 xp: chatXp + voiceXp,

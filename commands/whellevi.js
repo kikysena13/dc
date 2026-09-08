@@ -40,6 +40,15 @@ function setProfileBackground(userId, username, backgroundUrl) {
 	writePoints(points);
 }
 
+function setProfileBio(userId, username, bio) {
+	const points = readPoints();
+	const memberPoints = points[userId] || { username, whellRp: 0, leviaRp: 0 };
+	memberPoints.username = username;
+	memberPoints.bio = bio;
+	points[userId] = memberPoints;
+	writePoints(points);
+}
+
 function getRoleSpending(points, roles) {
 	const role = roles.find(name => ["WHELL", "LEVIA", "LEVIATHAN"].includes(normalizeRole(name)));
 	if (!role) return null;
@@ -142,4 +151,4 @@ async function handleWhellLeviCommand(message) {
 	return true;
 }
 
-module.exports = { handleWhellLeviCommand, getPoints, setProfileBackground, getRoleSpending, THEME_THRESHOLDS };
+module.exports = { handleWhellLeviCommand, getPoints, setProfileBackground, setProfileBio, getRoleSpending, THEME_THRESHOLDS };
