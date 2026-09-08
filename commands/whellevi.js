@@ -50,8 +50,11 @@ function setProfileBio(userId, username, bio) {
 	writePoints(points);
 }
 
-function getRoleSpending(points, roles) {
-	const role = roles.find(name => ["WHELL", "LEVIA", "LEVIATHAN"].includes(normalizeRole(name)));
+function getRoleSpending(points, roles, preferredRole = null) {
+	const normalizedPreferredRole = normalizeRole(preferredRole);
+	const role = normalizedPreferredRole
+		? roles.find(name => normalizeRole(name) === normalizedPreferredRole)
+		: roles.find(name => ["WHELL", "LEVIA", "LEVIATHAN"].includes(normalizeRole(name)));
 	if (!role) return null;
 	const isWhell = normalizeRole(role) === "WHELL";
 	const amount = isWhell ? points.whellRp || 0 : points.leviaRp || 0;
@@ -81,6 +84,7 @@ function getHelpMessage() {
 		"`!whellevi add @member 150000 RP WHELL` - tambah spending",
 		"`!whellevi set @member $150000 LEVIA` - atur total spending",
 		"`!whellevi reset @member WHELL` - hapus poin role tersebut",
+		"`!whellevi resetall @member` - hapus total WHELL dan LEVIA",
 		"`!whellevi cek @member` - lihat total spending"
 	].join("\n");
 }
@@ -109,6 +113,23 @@ async function handleWhellLeviCommand(message) {
 			return true;
 		}
 		await message.reply(`${target} — WHELL: **${formatSpending(points.whellRp || 0, points.whellCurrency)}**, LEVIA: **${formatSpending(points.leviaRp || 0, points.leviaCurrency)}**`);
+		return true;
+	}
+	if (action === "resetall") {
+		if (!target) {
+			await message.reply(getHelpMessage());
+			return true;
+		}
+		const points = readPoints();
+		const memberPoints = points[target.id] || { username: target.user.username };
+		memberPoints.whellRp = 0;
+		memberPoints.leviaRp = 0;
+		memberPoints.whellCurrency = "$";
+		memberPoints.leviaCurrency = "$";
+		memberPoints.username = target.user.username;
+		points[target.id] = memberPoints;
+		writePoints(points);
+		await message.reply(`${target} total spending WHELL dan LEVIA berhasil direset.`);
 		return true;
 	}
 
