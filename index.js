@@ -90,13 +90,15 @@ function getDashboardMembers() {
 function startDashboardServer() {
     const dashboardFile = path.join(__dirname, "index.html");
     const server = http.createServer((request, response) => {
-        if (request.url === "/health") {
+        const requestPath = new URL(request.url, `http://${request.headers.host || "localhost"}`).pathname;
+
+        if (requestPath === "/health") {
             response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
             response.end(JSON.stringify({ status: "ok" }));
             return;
         }
 
-        if (request.url === "/api/leaderboard") {
+        if (requestPath === "/api/leaderboard") {
             try {
                 const members = getDashboardMembers();
                 response.writeHead(200, {
@@ -112,7 +114,7 @@ function startDashboardServer() {
             return;
         }
 
-        if (request.url === "/" || request.url === "/index.html") {
+        if (requestPath === "/" || requestPath === "/index.html") {
             response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
             response.end(fs.readFileSync(dashboardFile));
             return;
