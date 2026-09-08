@@ -88,7 +88,7 @@ function getDashboardMembers() {
 }
 
 function startDashboardServer() {
-    const dashboardFile = path.join(__dirname, "l", "index.html");
+    const dashboardFile = path.join(__dirname, "index.html");
     const server = http.createServer((request, response) => {
         if (request.url === "/api/leaderboard") {
             try {
