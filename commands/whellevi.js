@@ -9,8 +9,9 @@ const ROLE_NAMES = {
 };
 const CURRENCY_NAMES = new Set(["RP", "$"]);
 const THEME_THRESHOLDS = {
-	exclusive: 1000000,
-	custom: 500000
+	exclusive: 30000000,
+	custom: 15000000,
+	silver: 10000000
 };
 
 function readPoints() {
@@ -55,9 +56,10 @@ function getRoleSpending(points, roles) {
 	const isWhell = normalizeRole(role) === "WHELL";
 	const amount = isWhell ? points.whellRp || 0 : points.leviaRp || 0;
 	const currency = isWhell ? points.whellCurrency || "$" : points.leviaCurrency || "$";
+	if (amount < THEME_THRESHOLDS.silver) return null;
 	let tier = "silver";
 	if (amount >= THEME_THRESHOLDS.exclusive) tier = "exclusive";
-	else if (amount >= THEME_THRESHOLDS.custom && points.profileBackground) tier = "custom";
+	else if (amount >= THEME_THRESHOLDS.custom) tier = "custom";
 	return { role: normalizeRole(role), amount, currency, tier, background: points.profileBackground || "" };
 }
 

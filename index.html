@@ -1105,7 +1105,7 @@
                 const title = selectedRole ? member.bio || 'Belum ada bio' : `LVL ${member.level}`;
                 const theme = selectedRole ? member.theme : null;
                 const themeClass = theme ? ` profile-theme theme-${theme.tier}` : '';
-                const themeStyle = theme?.tier === 'custom' && theme.background ? ` style="background-image:linear-gradient(90deg,rgba(17,15,14,.94),rgba(17,15,14,.68),rgba(17,15,14,.8)),url('${escapeHtml(theme.background).replace(/'/g, '%27')}')"` : '';
+                const themeStyle = ['exclusive', 'custom'].includes(theme?.tier) && theme.background ? ` style="background-image:linear-gradient(90deg,rgba(17,15,14,.94),rgba(17,15,14,.68),rgba(17,15,14,.8)),url('${escapeHtml(theme.background).replace(/'/g, '%27')}')"` : '';
                 return `<tr class="${themeClass.trim()}"${themeStyle}><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${escapeHtml(member.avatar)}" alt="Avatar ${escapeHtml(member.username)}"><div><strong>${escapeHtml(member.username)}</strong><span>ID ${escapeHtml(member.id)}</span></div></div></td><td>${escapeHtml(title)}</td><td class="xp">${value}</td><td><div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${selectedRole ? 'Total spending' : `${member.progress}% menuju level berikutnya`}</span></div></td></tr>`;
             }).join('');
         };
