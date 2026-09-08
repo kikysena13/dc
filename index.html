@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0b0f17">
-    <title>Good Time Game | Leaderboard</title>
+    <title>Midnight Lounge | Leaderboard</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
@@ -63,7 +63,7 @@
             border-right: 1px solid var(--line);
             background: rgba(12, 16, 24, .9);
             display: flex;
-            flex-direction: column;
+                width: 100%;
             position: fixed;
             inset: 0 auto 0 0;
             z-index: 4;
@@ -692,9 +692,7 @@
                 padding: 0 14px 32px;
             }
 
-            .topbar {
-                height: 68px;
-            }
+                    .hero { min-height: 410px; margin-top: 12px; padding: 25px 20px; }
 
             .period,
             .profile-text {
@@ -824,16 +822,19 @@
         .content { max-width: 1280px; }
         .hero {
             min-height: 380px;
-            margin-top: 23px;
+            width: 100%;
+            margin-top: 0px;
             padding: 42px;
             align-items: end;
             position: relative;
             overflow: hidden;
             border: 1px solid var(--line);
-            background: linear-gradient(90deg, rgba(12, 10, 9, .97) 0%, rgba(12, 10, 9, .76) 43%, rgba(12, 10, 9, .2) 100%), url('https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1800&q=85') center/cover;
+            background-image: linear-gradient(90deg, rgba(12, 10, 9, .97) 0%, rgba(12, 10, 9, .76) 43%, rgba(12, 10, 9, .2) 100%), url('https://media.discordapp.net/attachments/1546690142700310608/1546793970884026368/e8339b40-d8fe-456b-a557-0c1ad3f18a10.jpg?ex=6aa113a4&is=6a9fc224&hm=336251af8a31e8cda1e2c9f0ae4a1c659962d9ef8995ec828b176b92885d850e&=&format=webp');
+            background-position: center center;
+            background-size: cover;
             box-shadow: var(--shadow);
         }
-        .hero::after { content: 'GOOD TIME GAME / COMMUNITY ARCHIVE'; position: absolute; right: 23px; top: 20px; color: rgba(247, 241, 231, .58); font-size: 9px; letter-spacing: 2px; writing-mode: vertical-rl; }
+        .hero::after { content: 'Midnight Lounge / COMMUNITY ARCHIVE'; position: absolute; right: 23px; top: 20px; color: rgba(247, 241, 231, .58); font-size: 9px; letter-spacing: 2px; writing-mode: vertical-rl; }
         .hero > div:first-child { position: relative; z-index: 1; max-width: 560px; }
         .eyebrow { color: var(--cyan); letter-spacing: 2px; font-size: 10px; }
         h1 { max-width: 550px; font-size: clamp(40px, 7vw, 82px); line-height: .94; letter-spacing: -3px; text-transform: uppercase; }
@@ -862,20 +863,18 @@
         .filter { border-radius: 1px; text-transform: uppercase; letter-spacing: .7px; }
         th { font-size: 9px; letter-spacing: 1.1px; }
         td { border-bottom-color: rgba(255, 245, 225, .08); }
-        .level { border-radius: 2px; }
+            .level { border-radius: 2px; }
         .dummy-note { border-radius: 2px; }
-
-        @media (max-width: 980px) {
-            .sidebar { width: 100%; height: 64px; padding: 0 20px; display: flex; justify-content: space-between; }
-            .brand-copy, .sidebar-bottom { display: block; }
-            nav { display: none; }
-            .main { margin: 64px 0 0; width: 100%; padding: 0 20px 50px; }
-        }
 
         @media (max-width: 700px) {
             .main { padding: 0 12px 38px; }
             .topbar { height: 58px; }
-            .hero { min-height: 410px; margin-top: 12px; padding: 25px 20px; }
+            .hero {
+                min-height: 410px;
+                margin-top: 12px;
+                padding: 25px 20px;
+                background-position: 58% center;
+            }
             h1 { font-size: 47px; letter-spacing: -2px; }
             .hero::after { display: none; }
             .stats { grid-template-columns: 1fr 1fr; }
@@ -892,14 +891,16 @@
         <aside class="sidebar">
             <div class="brand">
                 <div class="brand-mark">GT</div>
-                <div class="brand-copy"><strong>Good Time Game</strong><span>Community dashboard</span></div>
+                <div class="brand-copy"><strong>Midnight Lounge</strong><span>Community dashboard</span></div>
             </div>
             <div class="nav-label">Workspace</div>
             <nav aria-label="Navigasi utama">
-                <button class="nav-item active"><span class="nav-icon">⌂</span><span>Ringkasan</span></button>
+                <button class="nav-item active"><span class="nav-icon">⌂</span><span>Main</span></button>
                 <button class="nav-item"><span class="nav-icon">♛</span><span>Leaderboard</span></button>
-                <button class="nav-item"><span class="nav-icon">◉</span><span>Profil Saya</span></button>
+                <button class="nav-item" data-role-filter="WHELL"><span class="nav-icon">◉</span><span>Top Whell</span></button>
+                <button class="nav-item" data-role-filter="LEVIA"><span class="nav-icon">◷</span><span>Top Levia</span></button>
                 <button class="nav-item"><span class="nav-icon">◷</span><span>Riwayat Musim</span></button>
+
             </nav>
             <div class="sidebar-bottom">
                 <div class="server-status"><i class="online"></i> Server online</div>
@@ -920,15 +921,13 @@
                 <section class="hero">
                     <div>
                         <div class="eyebrow">Aktivitas komunitas</div>
-                        <h1>Selamat datang di arena.</h1>
-                        <p>Pantau kontribusi member Good Time Game dalam satu tampilan.</p>
+                        <h1>Selamat datang di Midnight Lounge</h1>
                     </div>
-                    <div class="live-pill"><i class="online"></i> Data diperbarui 2 menit lalu</div>
                 </section>
                 <section class="stats" aria-label="Statistik server">
                     <article class="stat-card">
                         <div class="stat-head"><span>Total Member</span><span class="stat-icon">♙</span></div>
-                        <div class="stat-value">1,248</div>
+                        <div class="stat-value" id="total-members">0</div>
                         <div class="stat-foot"><span class="up">+12.4%</span> dari bulan lalu</div>
                     </article>
                     <article class="stat-card">
@@ -979,8 +978,8 @@
                 <section class="panel table-panel" id="leaderboard">
                     <div class="panel-header">
                         <div>
-                            <h2 class="panel-title">Leaderboard keaktifan</h2>
-                            <p class="panel-subtitle">Peringkat berdasarkan akumulasi XP member</p>
+                            <h2 class="panel-title" id="leaderboard-title">Leaderboard keaktifan</h2>
+                            <p class="panel-subtitle" id="leaderboard-subtitle">Peringkat berdasarkan aktivitas chat dan voice</p>
                         </div>
                         <div class="filters" role="tablist"><button class="filter active"
                                 data-filter="overall">Overall</button><button class="filter"
@@ -1008,37 +1007,66 @@
     </div>
 
     <script>
-        // PREVIEW_DATA: ganti objek ini dengan hasil fetch('/api/leaderboard') saat backend siap.
-        // Struktur yang dipakai UI: id, username, avatar, level, xp, chatXp, voiceXp, monthlyXp, progress.
-        const PREVIEW_DATA = {
-            members: [
-                { id: '184920381029', username: 'Rexzard', avatar: 'https://cdn.discordapp.com/embed/avatars/1.png', level: 42, xp: 28460, chatXp: 14800, voiceXp: 8360, monthlyXp: 4920, progress: 82 },
-                { id: '293810291830', username: 'Nayla.exe', avatar: 'https://cdn.discordapp.com/embed/avatars/2.png', level: 39, xp: 25120, chatXp: 12640, voiceXp: 7990, monthlyXp: 4380, progress: 67 },
-                { id: '392018301928', username: 'KuroSenpai', avatar: 'https://cdn.discordapp.com/embed/avatars/3.png', level: 36, xp: 22890, chatXp: 11020, voiceXp: 8120, monthlyXp: 4010, progress: 54 },
-                { id: '482019283019', username: 'MochiMilk', avatar: 'https://cdn.discordapp.com/embed/avatars/4.png', level: 31, xp: 18940, chatXp: 10230, voiceXp: 5510, monthlyXp: 3640, progress: 76 },
-                { id: '582019283018', username: 'Aetherial', avatar: 'https://cdn.discordapp.com/embed/avatars/0.png', level: 28, xp: 16420, chatXp: 8240, voiceXp: 5930, monthlyXp: 3280, progress: 43 },
-                { id: '682019283017', username: 'PixelPanda', avatar: 'https://cdn.discordapp.com/embed/avatars/1.png', level: 25, xp: 14280, chatXp: 7980, voiceXp: 4210, monthlyXp: 2900, progress: 61 }
-            ]
-        };
+        let PREVIEW_DATA = { members: [] };
 
         const formatXp = (value) => new Intl.NumberFormat('id-ID').format(value);
-        const sortedMembers = (filter) => [...PREVIEW_DATA.members].sort((a, b) => (b[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp']) - (a[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp']));
+        let selectedRole = null;
+        const getVisibleMembers = () => selectedRole
+            ? PREVIEW_DATA.members.filter((member) => member.roles.some((role) => {
+                const normalizedRole = role.toUpperCase();
+                return selectedRole === 'LEVIA'
+                    ? normalizedRole === 'LEVIA' || normalizedRole === 'LEVIATHAN'
+                    : normalizedRole === selectedRole;
+            }))
+            : PREVIEW_DATA.members;
+        const sortedMembers = (filter) => {
+            const xpField = selectedRole === 'WHELL'
+                ? 'whellRp'
+                : selectedRole === 'LEVIA'
+                    ? 'leviaRp'
+                    : filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp';
+            return [...getVisibleMembers()].sort((a, b) => b[xpField] - a[xpField]);
+        };
         const renderLeaderboard = (filter = 'overall') => {
             const members = sortedMembers(filter);
             document.getElementById('leaderboard-body').innerHTML = members.map((member, index) => {
-                const xp = member[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp'];
-                return `<tr><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div><strong>${member.username}</strong><span>ID ${member.id}</span></div></div></td><td><span class="level">LVL ${member.level}</span></td><td class="xp">${formatXp(xp)} <small>XP</small></td><td><div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${member.progress}% menuju level berikutnya</span></div></td></tr>`;
+                const xp = selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp'];
+                const activityLabel = filter === 'chat' ? 'pesan' : filter === 'voice' ? 'menit' : 'poin';
+                const value = selectedRole ? `$${formatXp(xp)}` : `${formatXp(xp)} <small>${activityLabel}</small>`;
+                return `<tr><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div><strong>${member.username}</strong><span>ID ${member.id}</span></div></div></td><td><span class="level">LVL ${member.level}</span></td><td class="xp">${value}</td><td><div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${selectedRole ? 'Total spending' : `${member.progress}% menuju level berikutnya`}</span></div></td></tr>`;
             }).join('');
         };
         const renderPodium = () => {
             const members = sortedMembers('overall').slice(0, 3);
-            document.getElementById('podium').innerHTML = members.map((member, index) => `<div class="podium-item"><img class="avatar podium-avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div class="podium-name">${member.username}</div><div class="podium-xp">${formatXp(member.xp)} XP</div><div class="podium-rank">${index + 1}</div></div>`).join('');
+            document.getElementById('podium').innerHTML = members.map((member, index) => {
+                const points = selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member.xp;
+                return `<div class="podium-item"><img class="avatar podium-avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div class="podium-name">${member.username}</div><div class="podium-xp">${selectedRole ? '$' : ''}${formatXp(points)}${selectedRole ? '' : ' XP'}</div><div class="podium-rank">${index + 1}</div></div>`;
+            }).join('');
+        };
+        const loadLeaderboard = async () => {
+            const response = await fetch('/api/leaderboard');
+            if (!response.ok) throw new Error('Gagal mengambil data Discord');
+            PREVIEW_DATA = await response.json();
+            document.getElementById('total-members').textContent = formatXp(PREVIEW_DATA.totalMembers || PREVIEW_DATA.members.length);
+            renderPodium();
+            renderLeaderboard();
         };
         document.querySelectorAll('.filter').forEach((button) => button.addEventListener('click', () => { document.querySelector('.filter.active').classList.remove('active'); button.classList.add('active'); renderLeaderboard(button.dataset.filter); }));
-        document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => { document.querySelector('.nav-item.active').classList.remove('active'); button.classList.add('active'); }));
+        document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => {
+            document.querySelector('.nav-item.active').classList.remove('active');
+            button.classList.add('active');
+            selectedRole = button.dataset.roleFilter || null;
+            document.getElementById('leaderboard-title').textContent = selectedRole ? `Top ${selectedRole === 'WHELL' ? 'Whell' : 'Levia'}` : 'Leaderboard keaktifan';
+            document.getElementById('leaderboard-subtitle').textContent = selectedRole ? `Member dengan role ${selectedRole}` : 'Peringkat berdasarkan aktivitas chat dan voice';
+            renderPodium();
+            renderLeaderboard(document.querySelector('.filter.active').dataset.filter);
+            document.getElementById('leaderboard').scrollIntoView({ behavior: 'smooth' });
+        }));
         document.querySelector('[data-scroll="leaderboard"]').addEventListener('click', () => document.getElementById('leaderboard').scrollIntoView({ behavior: 'smooth' }));
-        renderPodium();
-        renderLeaderboard();
+        loadLeaderboard().catch((error) => {
+            console.error(error);
+            document.getElementById('leaderboard-body').innerHTML = '<tr><td colspan="5">Data Discord belum tersedia. Pastikan bot sedang online.</td></tr>';
+        });
     </script>
 </body>
 
