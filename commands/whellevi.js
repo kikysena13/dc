@@ -7,6 +7,7 @@ const ROLE_NAMES = {
 	LEVIA: "leviaRp",
 	LEVIATHAN: "leviaRp"
 };
+const CURRENCY_NAMES = new Set(["RP", "$"]);
 
 function readPoints() {
 	try {
@@ -34,11 +35,15 @@ function formatRp(value) {
 	return new Intl.NumberFormat("id-ID").format(value);
 }
 
+function formatSpending(value, currency = "$") {
+	return currency === "RP" ? `Rp ${formatRp(value)}` : `$${formatRp(value)}`;
+}
+
 function getHelpMessage() {
 	return [
 		"**Pencatatan spending WHELL/LEVIA**",
-		"`!whellevi add @member 150000 WHELL` - tambah spending",
-		"`!whellevi set @member 150000 LEVIA` - atur total spending",
+		"`!whellevi add @member 150000 RP WHELL` - tambah spending",
+		"`!whellevi set @member $150000 LEVIA` - atur total spending",
 		"`!whellevi reset @member WHELL` - hapus poin role tersebut",
 		"`!whellevi cek @member` - lihat total spending"
 	].join("\n");
@@ -47,7 +52,7 @@ function getHelpMessage() {
 async function handleWhellLeviCommand(message) {
 	const parts = message.content.trim().split(/\s+/);
 	const command = parts[0]?.toLowerCase();
-	if (!["!whellevi", "whellevi", "!spending", "spending"].includes(command)) return false;
+	if (!["!whellevi", "whellevi", "!whelevi", "whelevi", "!spending", "spending"].includes(command)) return false;
 
 	if (!message.guild) {
 		await message.reply("Command ini hanya bisa digunakan di dalam server.");
@@ -67,7 +72,7 @@ async function handleWhellLeviCommand(message) {
 			await message.reply("Member tidak ditemukan atau belum memiliki catatan spending.");
 			return true;
 		}
-		await message.reply(`${target} — WHELL: **$${formatRp(points.whellRp || 0)}**, LEVIA: **$${formatRp(points.leviaRp || 0)}**`);
+		await message.reply(`${target} — WHELL: **${formatSpending(points.whellRp || 0, points.whellCurrency)}**, LEVIA: **${formatSpending(points.leviaRp || 0, points.leviaCurrency)}**`);
 		return true;
 	}
 
@@ -76,7 +81,14 @@ async function handleWhellLeviCommand(message) {
 		return true;
 	}
 
-	const roleName = normalizeRole(parts[action === "reset" ? 3 : 4]);
+	const argumentStart = action === "reset" ? 3 : 3;
+	const amountInput = parts[argumentStart] || "";
+	const possibleCurrency = normalizeRole(parts[argumentStart + 1]);
+	const currency = CURRENCY_NAMES.has(possibleCurrency)
+		? possibleCurrency
+		: amountInput.trim().startsWith("$") ? "$" : "$";
+	const roleIndex = CURRENCY_NAMES.has(possibleCurrency) ? argumentStart + 2 : argumentStart + 1;
+	const roleName = normalizeRole(parts[action === "reset" ? 3 : roleIndex]);
 	const pointsKey = ROLE_NAMES[roleName];
 	if (!target || !pointsKey) {
 		await message.reply(getHelpMessage());
@@ -87,19 +99,21 @@ async function handleWhellLeviCommand(message) {
 	const memberPoints = points[target.id] || { username: target.user.username, whellRp: 0, leviaRp: 0 };
 	if (action === "reset") {
 		memberPoints[pointsKey] = 0;
+		memberPoints[`${roleName === "WHELL" ? "whell" : "levia"}Currency`] = currency;
 	} else {
-		const amount = Number(parts[3]?.replace(/[^0-9]/g, ""));
+		const amount = Number(amountInput.replace(/[^0-9]/g, ""));
 		if (!Number.isSafeInteger(amount) || amount < 0) {
 			await message.reply("Nominal spending harus berupa angka bulat positif.");
 			return true;
 		}
 		memberPoints[pointsKey] = action === "add" ? (memberPoints[pointsKey] || 0) + amount : amount;
+		memberPoints[`${roleName === "WHELL" ? "whell" : "levia"}Currency`] = currency;
 	}
 
 	memberPoints.username = target.user.username;
 	points[target.id] = memberPoints;
 	writePoints(points);
-	await message.reply(`${target} sekarang memiliki **$${formatRp(memberPoints[pointsKey])}** untuk role ${roleName}.`);
+	await message.reply(`${target} sekarang memiliki **${formatSpending(memberPoints[pointsKey], currency)}** untuk role ${roleName}.`);
 	return true;
 }
 

@@ -1011,7 +1011,6 @@
                             <p>Leaderboard akan dimulai dari awal untuk musim baru.</p>
                             <div class="progress"><i style="width:68%"></i></div>
                             <div class="reset-meta"><span>18 hari tersisa</span><span>68% berjalan</span></div>
-                            <div class="dummy-note">Preview UI: data di bawah masih menggunakan dataset sementara.</div>
                         </div>
                     </article>
                 </section>
@@ -1034,8 +1033,8 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Member</th>
-                                    <th>Level</th>
-                                    <th>Total XP</th>
+                                    <th id="member-title-heading">Level</th>
+                                    <th id="spending-heading">Total XP</th>
                                     <th>Progress level</th>
                                 </tr>
                             </thead>
@@ -1073,15 +1072,17 @@
             document.getElementById('leaderboard-body').innerHTML = members.map((member, index) => {
                 const xp = selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp'];
                 const activityLabel = filter === 'chat' ? 'pesan' : filter === 'voice' ? 'menit' : 'poin';
-                const value = selectedRole ? `$${formatXp(xp)}` : `${formatXp(xp)} <small>${activityLabel}</small>`;
-                return `<tr><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div><strong>${member.username}</strong><span>ID ${member.id}</span></div></div></td><td><span class="level">LVL ${member.level}</span></td><td class="xp">${value}</td><td><div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${selectedRole ? 'Total spending' : `${member.progress}% menuju level berikutnya`}</span></div></td></tr>`;
+                const value = selectedRole ? `${member[selectedRole === 'WHELL' ? 'whellCurrency' : 'leviaCurrency'] === 'RP' ? 'Rp ' : '$'}${formatXp(xp)}` : `${formatXp(xp)} <small>${activityLabel}</small>`;
+                const title = selectedRole ? member.displayName || member.username : `LVL ${member.level}`;
+                return `<tr><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div><strong>${member.username}</strong><span>ID ${member.id}</span></div></div></td><td>${title}</td><td class="xp">${value}</td><td><div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${selectedRole ? 'Total spending' : `${member.progress}% menuju level berikutnya`}</span></div></td></tr>`;
             }).join('');
         };
         const renderPodium = () => {
             const members = sortedMembers('overall').slice(0, 3);
             document.getElementById('podium').innerHTML = members.map((member, index) => {
                 const points = selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member.xp;
-                return `<div class="podium-item"><img class="avatar podium-avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div class="podium-name">${member.username}</div><div class="podium-xp">${selectedRole ? '$' : ''}${formatXp(points)}${selectedRole ? '' : ' XP'}</div><div class="podium-rank">${index + 1}</div></div>`;
+                const currency = selectedRole === 'WHELL' ? member.whellCurrency : member.leviaCurrency;
+                return `<div class="podium-item"><img class="avatar podium-avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div class="podium-name">${member.username}</div><div class="podium-xp">${selectedRole ? currency === 'RP' ? 'Rp ' : '$' : ''}${formatXp(points)}${selectedRole ? '' : ' XP'}</div><div class="podium-rank">${index + 1}</div></div>`;
             }).join('');
         };
         const loadLeaderboard = async () => {
@@ -1098,6 +1099,8 @@
             document.querySelector('.nav-item.active').classList.remove('active');
             button.classList.add('active');
             selectedRole = button.dataset.roleFilter || null;
+            document.getElementById('member-title-heading').textContent = selectedRole ? 'Title' : 'Level';
+            document.getElementById('spending-heading').textContent = selectedRole ? 'Spending' : 'Total XP';
             document.getElementById('leaderboard-title').textContent = selectedRole ? `Top ${selectedRole === 'WHELL' ? 'Whell' : 'Levia'}` : 'Leaderboard keaktifan';
             document.getElementById('leaderboard-subtitle').textContent = selectedRole ? `Member dengan role ${selectedRole}` : 'Peringkat berdasarkan aktivitas chat dan voice';
             renderPodium();

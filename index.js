@@ -76,6 +76,8 @@ function getDashboardMembers() {
                     .map(role => role.name),
                 whellRp: points[member.id]?.whellRp || 0,
                 leviaRp: points[member.id]?.leviaRp || 0,
+                whellCurrency: points[member.id]?.whellCurrency || "$",
+                leviaCurrency: points[member.id]?.leviaCurrency || "$",
                 level: Math.floor((chatXp + voiceXp) / 100),
                 xp: chatXp + voiceXp,
                 chatXp,
