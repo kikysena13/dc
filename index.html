@@ -887,9 +887,11 @@
             .brand strong { font-size: 13px; }
             .brand span { font-size: 9px; }
             nav {
-                display: flex;
-                justify-content: flex-start;
-                gap: 4px;
+                display: grid;
+                grid-auto-flow: column;
+                grid-auto-columns: max-content;
+                justify-content: start;
+                gap: 8px;
                 width: 100%;
                 overflow-x: auto;
                 scrollbar-width: none;
@@ -897,7 +899,8 @@
             nav::-webkit-scrollbar { display: none; }
             .nav-item span:not(.nav-icon) { display: inline; }
             .nav-item {
-                flex: 0 0 auto;
+                display: block;
+                min-width: max-content;
                 padding: 8px 10px;
                 white-space: nowrap;
                 font-size: 10px;
