@@ -41,6 +41,8 @@ Sekarang user bisa pakai format ini:
 !addinput https://contoh.com/gambar.gif crop=top-left
 !addinput https://contoh.com/gambar.gif crop=bottom-right
 !addinput https://contoh.com/gambar.gif crop=center
+!addinput https://contoh.com/gambar.gif crop=center-left
+!addinput https://contoh.com/gambar.gif crop=center-right
 Opsi crop yang didukung
 center
 top
@@ -51,8 +53,16 @@ top-left
 top-right
 bottom-left
 bottom-right
+center-left
+center-right
+center left
+center right
 Contoh yang lebih jelas
 Kalau mau fokus ke bagian atas kiri:
 !addinput https://.../gambar.gif crop=top-left
+Kalau mau fokus ke bagian tengah kiri:
+!addinput https://.../gambar.gif crop=center-left
+Kalau mau fokus ke bagian tengah kanan:
+!addinput https://.../gambar.gif crop=center-right
 Kalau mau fokus ke bagian tengah:
 !addinput https://.../gambar.gif crop=center

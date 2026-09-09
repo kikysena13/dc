@@ -1,7 +1,25 @@
 const { setProfileBackground, setProfileBio, getPoints, getRoleSpending } = require("./whellevi");
 
 const URL_PATTERN = /^https?:\/\/\S+$/i;
-const VALID_CROP_POSITIONS = new Set(["center", "top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right"]);
+const VALID_CROP_POSITIONS = new Set([
+    "center",
+    "top",
+    "bottom",
+    "left",
+    "right",
+    "top-left",
+    "top-right",
+    "bottom-left",
+    "bottom-right",
+    "center-left",
+    "center-right",
+    "center left",
+    "center right",
+    "top left",
+    "top right",
+    "bottom left",
+    "bottom right"
+]);
 
 function parseCropPosition(value) {
     if (!value) return null;
@@ -15,8 +33,11 @@ function parseCropPosition(value) {
     }
 
     if (words.length === 2) {
-        const combined = `${words[0]}-${words[1]}`;
-        return VALID_CROP_POSITIONS.has(combined) ? combined : null;
+        const combinedHyphen = `${words[0]}-${words[1]}`;
+        if (VALID_CROP_POSITIONS.has(combinedHyphen)) return combinedHyphen;
+
+        const combinedSpace = `${words[0]} ${words[1]}`;
+        if (VALID_CROP_POSITIONS.has(combinedSpace)) return combinedSpace;
     }
 
     return null;
