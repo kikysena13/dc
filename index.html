@@ -1105,9 +1105,19 @@
         const formatXp = (value) => new Intl.NumberFormat('id-ID').format(value);
         const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
         let selectedRole = null;
+        const USD_TO_RP = 50000000 / 3000;
         const getSpendingRole = (member) => member.spendingRole === 'WHELL' || member.spendingRole === 'LEVIA'
             ? member.spendingRole
             : member.whellRp > 0 ? 'WHELL' : member.leviaRp > 0 ? 'LEVIA' : null;
+        const getNormalizedSpendingValue = (member, role) => {
+            const rawAmount = role === 'WHELL'
+                ? Number(member.whellRp || 0)
+                : Number(member.leviaRp || 0);
+            const currency = role === 'WHELL'
+                ? member.whellCurrency
+                : member.leviaCurrency;
+            return currency === 'RP' ? rawAmount : rawAmount * USD_TO_RP;
+        };
         const getVisibleMembers = () => selectedRole === 'SPENDING'
             ? PREVIEW_DATA.members.filter((member) => member.roles.some((role) => {
                 const normalizedRole = role.toUpperCase();
@@ -1122,19 +1132,18 @@
             }))
             : PREVIEW_DATA.members;
         const sortedMembers = (filter) => {
-            const xpField = selectedRole === 'SPENDING'
-                ? null
-                : selectedRole === 'WHELL'
-                ? 'whellRp'
-                : selectedRole === 'LEVIA'
-                    ? 'leviaRp'
-                    : filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp';
             return [...getVisibleMembers()].sort((a, b) => {
                 if (selectedRole === 'SPENDING') {
-                    const aRole = getSpendingRole(a);
-                    const bRole = getSpendingRole(b);
-                    return (bRole === 'WHELL' ? b.whellRp : b.leviaRp) - (aRole === 'WHELL' ? a.whellRp : a.leviaRp);
+                    const aRole = getSpendingRole(a) || 'WHELL';
+                    const bRole = getSpendingRole(b) || 'WHELL';
+                    return getNormalizedSpendingValue(b, bRole) - getNormalizedSpendingValue(a, aRole);
                 }
+
+                if (selectedRole === 'WHELL' || selectedRole === 'LEVIA') {
+                    return getNormalizedSpendingValue(b, selectedRole) - getNormalizedSpendingValue(a, selectedRole);
+                }
+
+                const xpField = filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp';
                 return b[xpField] - a[xpField];
             });
         };
