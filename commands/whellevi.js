@@ -34,7 +34,7 @@ function writePoints(points) {
 let githubSyncQueue = Promise.resolve();
 
 function queueGitHubPersistence(serializedPoints) {
-	if (!process.env.GITHUB_TOKEN) return Promise.resolve();
+	if (!process.env.GITHUB_TOKEN) return Promise.resolve(false);
 
 	githubSyncQueue = githubSyncQueue
 		.then(async () => {
@@ -62,8 +62,12 @@ function queueGitHubPersistence(serializedPoints) {
 				})
 			});
 			if (!updateResponse.ok) throw new Error(`GitHub write failed with ${updateResponse.status}`);
+			return true;
 		})
-		.catch(error => console.error("GitHub profile data sync failed:", error.message));
+		.catch(error => {
+			console.error("GitHub profile data sync failed:", error.message);
+			return false;
+		});
 }
 
 function getPoints() {
@@ -99,7 +103,7 @@ async function setProfileBackground(userId, username, backgroundUrl, cropPositio
 	memberPoints.profileBackground = normalizeBackgroundUrl(backgroundUrl);
 	memberPoints.profileBackgroundPosition = cropPosition || memberPoints.profileBackgroundPosition || "center";
 	points[userId] = memberPoints;
-	await writePoints(points);
+	return await writePoints(points);
 }
 
 async function setProfileBio(userId, username, bio) {
@@ -108,7 +112,7 @@ async function setProfileBio(userId, username, bio) {
 	memberPoints.username = username;
 	memberPoints.bio = bio;
 	points[userId] = memberPoints;
-	await writePoints(points);
+	return await writePoints(points);
 }
 
 function getRoleSpending(points, roles, preferredRole = null) {

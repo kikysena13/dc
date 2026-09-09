@@ -73,8 +73,10 @@ async function handleInputCommand(message) {
             await message.reply("Bio harus berisi 1-120 karakter. Gunakan: `!addinputbio bio kamu`");
             return true;
         }
-        await setProfileBio(message.author.id, message.author.username, bio);
-        await message.reply("Bio profil berhasil disimpan.");
+        const synced = await setProfileBio(message.author.id, message.author.username, bio);
+        await message.reply(synced
+            ? "Bio profil berhasil disimpan permanen ke GitHub."
+            : "Bio profil tersimpan di server, tetapi belum tersinkron ke GitHub. Pastikan GITHUB_TOKEN sudah diatur di Railway.");
         return true;
     }
 
@@ -91,8 +93,10 @@ async function handleInputCommand(message) {
         return true;
     }
 
-    await setProfileBackground(message.author.id, message.author.username, backgroundUrl, crop);
-    await message.reply(`Background profil berhasil disimpan${crop ? ` dengan crop ${crop}` : ""}. Tema akan tampil di leaderboard setelah refresh.`);
+    const synced = await setProfileBackground(message.author.id, message.author.username, backgroundUrl, crop);
+    await message.reply(synced
+        ? `Background profil berhasil disimpan permanen${crop ? ` dengan crop ${crop}` : ""}. Tema akan tampil di leaderboard setelah refresh.`
+        : "Background profil tersimpan di server, tetapi belum tersinkron ke GitHub. Pastikan GITHUB_TOKEN sudah diatur di Railway.");
     return true;
 }
 
