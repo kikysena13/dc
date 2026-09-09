@@ -1167,22 +1167,8 @@
             }).join('');
         };
         const loadLeaderboard = async () => {
-            const localApiUrl = window.location.origin && window.location.origin !== 'null'
-                ? `${window.location.origin}/api/leaderboard`
-                : null;
-            const fallbackApiUrl = 'https://midnight-lounge-api-production-c038.up.railway.app/api/leaderboard';
-
-            let response;
-            if (localApiUrl) {
-                try {
-                    response = await fetch(localApiUrl, { cache: 'no-store' });
-                } catch (error) {
-                    response = await fetch(fallbackApiUrl, { cache: 'no-store' });
-                }
-            } else {
-                response = await fetch(fallbackApiUrl, { cache: 'no-store' });
-            }
-
+            const apiUrl = 'https://midnight-lounge-api-production-c038.up.railway.app/api/leaderboard';
+            const response = await fetch(apiUrl, { cache: 'no-store' });
             if (!response.ok) throw new Error('Gagal mengambil data Discord');
             PREVIEW_DATA = await response.json();
             document.getElementById('total-members').textContent = formatXp(PREVIEW_DATA.totalMembers || PREVIEW_DATA.members.length);
