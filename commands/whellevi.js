@@ -74,6 +74,8 @@ function queueGitHubPersistence(serializedPoints) {
 			console.error("GitHub profile data sync failed:", error.message);
 			return false;
 		});
+
+	return githubSyncQueue;
 }
 
 function getPoints() {
