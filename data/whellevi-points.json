@@ -34,6 +34,8 @@
     "whellRp": 10100000,
     "leviaRp": 0,
     "whellCurrency": "RP",
-    "role": "WHELL"
+    "role": "WHELL",
+    "profileBackground": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/eb/05/Pgk45XxPIPlCNdw.gif",
+    "profileBackgroundPosition": "center"
   }
 }
