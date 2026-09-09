@@ -262,7 +262,8 @@ async function handleWhellLeviCommand(message) {
 	memberPoints.username = target.user.username;
 	points[target.id] = memberPoints;
 	writePoints(points);
-	await message.reply(`${target} sekarang memiliki **${formatSpending(memberPoints[pointsKey], currency)}** untuk role ${roleName}.`);
+	const currentCurrency = memberPoints[roleName === "WHELL" ? "whellCurrency" : "leviaCurrency"] || "$";
+	await message.reply(`${target} sekarang memiliki **${formatSpending(memberPoints[pointsKey], currentCurrency)}** untuk role ${roleName}.`);
 	return true;
 }
 
