@@ -75,8 +75,8 @@ async function handleInputCommand(message) {
         }
         const synced = await setProfileBio(message.author.id, message.author.username, bio);
         await message.reply(synced
-            ? "Bio profil berhasil disimpan permanen ke GitHub."
-            : "Bio profil tersimpan di server, tetapi belum tersinkron ke GitHub. Pastikan GITHUB_TOKEN sudah diatur di Railway.");
+            ? "Bio profil berhasil disimpan"
+            : "Bio profil tersimpan");
         return true;
     }
 
