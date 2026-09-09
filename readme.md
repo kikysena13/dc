@@ -32,3 +32,27 @@ Dashboard Top Whell dan Top Levia sekarang diurutkan berdasarkan total RP spendi
 !whellevi resetall @member
 !whellevi reset @member LEVIA
 !whellevi reset @member WHELL
+
+
+
+Cara user crop background
+Sekarang user bisa pakai format ini:
+
+!addinput https://contoh.com/gambar.gif crop=top-left
+!addinput https://contoh.com/gambar.gif crop=bottom-right
+!addinput https://contoh.com/gambar.gif crop=center
+Opsi crop yang didukung
+center
+top
+bottom
+left
+right
+top-left
+top-right
+bottom-left
+bottom-right
+Contoh yang lebih jelas
+Kalau mau fokus ke bagian atas kiri:
+!addinput https://.../gambar.gif crop=top-left
+Kalau mau fokus ke bagian tengah:
+!addinput https://.../gambar.gif crop=center
