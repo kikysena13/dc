@@ -57,6 +57,19 @@ const spendingPoints = require("./commands/whellevi");
 const { handleInputCommand } = require("./commands/input");
 const { getMemberActivity, recordChatMessage, recordVoiceStateChange } = require("./commands/activity");
 
+const processedMessageIds = new Map();
+
+function markMessageProcessed(message) {
+    const now = Date.now();
+    processedMessageIds.set(message.id, now);
+
+    setTimeout(() => {
+        if (processedMessageIds.get(message.id) === now) {
+            processedMessageIds.delete(message.id);
+        }
+    }, 3000);
+}
+
 // ===== GLOBAL ERROR HANDLERS =====
 process.on('uncaughtException', (error) => {
     console.error('❌ Uncaught Exception:', error);
@@ -262,6 +275,12 @@ function createInputExampleEmbed() {
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
+
+    if (processedMessageIds.has(message.id)) {
+        return;
+    }
+    markMessageProcessed(message);
+
     recordChatMessage(message.author);
 
     if (await handleStudyScheduleCommand(message)) return;
