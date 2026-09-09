@@ -28,13 +28,13 @@ function writePoints(points) {
 	fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
 	const serializedPoints = JSON.stringify(points, null, 2) + "\n";
 	fs.writeFileSync(DATA_FILE, serializedPoints);
-	queueGitHubPersistence(serializedPoints);
+	return queueGitHubPersistence(serializedPoints);
 }
 
 let githubSyncQueue = Promise.resolve();
 
 function queueGitHubPersistence(serializedPoints) {
-	if (!process.env.GITHUB_TOKEN) return;
+	if (!process.env.GITHUB_TOKEN) return Promise.resolve();
 
 	githubSyncQueue = githubSyncQueue
 		.then(async () => {
@@ -92,23 +92,23 @@ function normalizeBackgroundUrl(backgroundUrl) {
 	return trimmed;
 }
 
-function setProfileBackground(userId, username, backgroundUrl, cropPosition = null) {
+async function setProfileBackground(userId, username, backgroundUrl, cropPosition = null) {
 	const points = readPoints();
 	const memberPoints = points[userId] || { username, whellRp: 0, leviaRp: 0 };
 	memberPoints.username = username;
 	memberPoints.profileBackground = normalizeBackgroundUrl(backgroundUrl);
 	memberPoints.profileBackgroundPosition = cropPosition || memberPoints.profileBackgroundPosition || "center";
 	points[userId] = memberPoints;
-	writePoints(points);
+	await writePoints(points);
 }
 
-function setProfileBio(userId, username, bio) {
+async function setProfileBio(userId, username, bio) {
 	const points = readPoints();
 	const memberPoints = points[userId] || { username, whellRp: 0, leviaRp: 0 };
 	memberPoints.username = username;
 	memberPoints.bio = bio;
 	points[userId] = memberPoints;
-	writePoints(points);
+	await writePoints(points);
 }
 
 function getRoleSpending(points, roles, preferredRole = null) {
@@ -255,7 +255,7 @@ async function handleWhellLeviCommand(message) {
 		memberPoints.role = null;
 		memberPoints.username = target.user.username;
 		points[target.id] = memberPoints;
-		writePoints(points);
+		await writePoints(points);
 		await message.reply(`${target} total spending WHELL dan LEVIA berhasil direset.`);
 		return true;
 	}
@@ -308,7 +308,7 @@ async function handleWhellLeviCommand(message) {
 	memberPoints.role = roleName;
 	memberPoints.username = target.user.username;
 	points[target.id] = memberPoints;
-	writePoints(points);
+	await writePoints(points);
 	const currentCurrency = memberPoints[roleName === "WHELL" ? "whellCurrency" : "leviaCurrency"] || "$";
 	await message.reply(`${target} sekarang memiliki **${formatSpending(memberPoints[pointsKey], currentCurrency)}** untuk role ${roleName}.`);
 	return true;

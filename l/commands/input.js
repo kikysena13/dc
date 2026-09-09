@@ -73,7 +73,7 @@ async function handleInputCommand(message) {
             await message.reply("Bio harus berisi 1-120 karakter. Gunakan: `!addinputbio bio kamu`");
             return true;
         }
-        setProfileBio(message.author.id, message.author.username, bio);
+        await setProfileBio(message.author.id, message.author.username, bio);
         await message.reply("Bio profil berhasil disimpan.");
         return true;
     }
@@ -91,7 +91,7 @@ async function handleInputCommand(message) {
         return true;
     }
 
-    setProfileBackground(message.author.id, message.author.username, backgroundUrl, crop);
+    await setProfileBackground(message.author.id, message.author.username, backgroundUrl, crop);
     await message.reply(`Background profil berhasil disimpan${crop ? ` dengan crop ${crop}` : ""}. Tema akan tampil di leaderboard setelah refresh.`);
     return true;
 }
