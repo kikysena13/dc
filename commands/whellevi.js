@@ -49,7 +49,10 @@ function queueGitHubPersistence(serializedPoints) {
 			};
 
 			const currentResponse = await fetch(`${endpoint}?ref=${encodeURIComponent(branch)}`, { headers });
-			if (!currentResponse.ok) throw new Error(`GitHub read failed with ${currentResponse.status}`);
+			if (!currentResponse.ok) {
+				const errorBody = await currentResponse.text();
+				throw new Error(`GitHub read failed with ${currentResponse.status}: ${errorBody.slice(0, 240)}`);
+			}
 			const currentFile = await currentResponse.json();
 			const updateResponse = await fetch(endpoint, {
 				method: "PUT",
@@ -61,7 +64,10 @@ function queueGitHubPersistence(serializedPoints) {
 					sha: currentFile.sha
 				})
 			});
-			if (!updateResponse.ok) throw new Error(`GitHub write failed with ${updateResponse.status}`);
+			if (!updateResponse.ok) {
+				const errorBody = await updateResponse.text();
+				throw new Error(`GitHub write failed with ${updateResponse.status}: ${errorBody.slice(0, 240)}`);
+			}
 			return true;
 		})
 		.catch(error => {
