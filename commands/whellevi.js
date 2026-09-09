@@ -26,7 +26,44 @@ function readPoints() {
 
 function writePoints(points) {
 	fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-	fs.writeFileSync(DATA_FILE, JSON.stringify(points, null, 2) + "\n");
+	const serializedPoints = JSON.stringify(points, null, 2) + "\n";
+	fs.writeFileSync(DATA_FILE, serializedPoints);
+	queueGitHubPersistence(serializedPoints);
+}
+
+let githubSyncQueue = Promise.resolve();
+
+function queueGitHubPersistence(serializedPoints) {
+	if (!process.env.GITHUB_TOKEN) return;
+
+	githubSyncQueue = githubSyncQueue
+		.then(async () => {
+			const repository = process.env.GITHUB_REPOSITORY || "kikysena13/dc";
+			const branch = process.env.GITHUB_BRANCH || "main";
+			const filePath = process.env.GITHUB_DATA_PATH || "data/whellevi-points.json";
+			const endpoint = `https://api.github.com/repos/${repository}/contents/${filePath}`;
+			const headers = {
+				Accept: "application/vnd.github+json",
+				Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+				"X-GitHub-Api-Version": "2022-11-28"
+			};
+
+			const currentResponse = await fetch(`${endpoint}?ref=${encodeURIComponent(branch)}`, { headers });
+			if (!currentResponse.ok) throw new Error(`GitHub read failed with ${currentResponse.status}`);
+			const currentFile = await currentResponse.json();
+			const updateResponse = await fetch(endpoint, {
+				method: "PUT",
+				headers: { ...headers, "Content-Type": "application/json" },
+				body: JSON.stringify({
+					message: "Update profile data from Discord",
+					content: Buffer.from(serializedPoints, "utf8").toString("base64"),
+					branch,
+					sha: currentFile.sha
+				})
+			});
+			if (!updateResponse.ok) throw new Error(`GitHub write failed with ${updateResponse.status}`);
+		})
+		.catch(error => console.error("GitHub profile data sync failed:", error.message));
 }
 
 function getPoints() {

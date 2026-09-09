@@ -23,6 +23,13 @@ Dashboard Top Whell dan Top Levia sekarang diurutkan berdasarkan total RP spendi
 !addinput https://example.com/profile.gif
 !addinputbio Bio kamu di sini
 
+Bio dan background akan otomatis disinkronkan ke GitHub setelah command berhasil. Tambahkan variable Railway berikut:
+
+GITHUB_TOKEN=token_github_dengan_permission_Contents_Read_and_write
+GITHUB_REPOSITORY=kikysena13/dc
+GITHUB_BRANCH=main
+GITHUB_DATA_PATH=data/whellevi-points.json
+
 !whellevi add @member $30000000 LEVIA
 !whellevi add @member 30000000 RP WHELL
 
