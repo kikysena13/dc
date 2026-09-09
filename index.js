@@ -5,6 +5,45 @@ const http = require("http");
 const path = require("path");
 const Discord = require("discord.js");
 const { handleStudyScheduleCommand } = require("./commands/studySchedule");
+
+const LOCK_FILE = path.join(__dirname, ".bot.lock");
+
+function cleanupLock() {
+    try {
+        const currentPid = fs.readFileSync(LOCK_FILE, "utf8").trim();
+        if (currentPid === String(process.pid)) {
+            fs.rmSync(LOCK_FILE, { force: true });
+        }
+    } catch (error) {
+        // Ignore cleanup errors when lock file is already absent.
+    }
+}
+
+function ensureSingleInstance() {
+    try {
+        if (fs.existsSync(LOCK_FILE)) {
+            const existingPid = Number(fs.readFileSync(LOCK_FILE, "utf8").trim());
+            if (existingPid && existingPid !== process.pid) {
+                try {
+                    process.kill(existingPid, 0);
+                    console.error(`⚠️ Bot instance already running with PID ${existingPid}. Refusing duplicate startup.`);
+                    process.exit(1);
+                } catch (error) {
+                    fs.rmSync(LOCK_FILE, { force: true });
+                }
+            }
+        }
+
+        fs.writeFileSync(LOCK_FILE, String(process.pid), "utf8");
+    } catch (error) {
+        console.error("Failed to initialize bot lock file:", error);
+    }
+}
+
+process.on("exit", cleanupLock);
+process.on("SIGINT", () => process.exit(0));
+process.on("SIGTERM", () => process.exit(0));
+ensureSingleInstance();
 const { handleMusicCommand } = require("./commands/music");
 const { handleRandomCodeCommand } = require("./commands/buatcoderrandom");
 const { handlePlayMusicCommand } = require("./commands/playmusic");
