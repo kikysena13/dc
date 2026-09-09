@@ -41,6 +41,11 @@ function normalizeBackgroundUrl(backgroundUrl) {
 		return trimmed;
 	}
 
+	const legacyTenorMatch = trimmed.match(/^https?:\/\/c\.tenor\.com\/([^/?#]+)\/([^/?#]+)$/i);
+	if (legacyTenorMatch) {
+		return `https://media.tenor.com/${legacyTenorMatch[1]}/${legacyTenorMatch[2]}`;
+	}
+
 	const tenorMatch = trimmed.match(/^https?:\/\/tenor\.com\/(?:view\/)?([^/?#]+)(?:\.[^/?#]+)?(?:[?#].*)?$/i);
 	if (tenorMatch) {
 		const assetId = tenorMatch[1].replace(/\.(gif|png|jpg|jpeg|webp)$/i, "");

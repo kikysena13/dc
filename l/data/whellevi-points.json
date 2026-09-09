@@ -13,7 +13,9 @@
     "whellRp": 4086.48,
     "leviaRp": 0,
     "whellCurrency": "$",
-    "role": "WHELL"
+    "role": "WHELL",
+    "profileBackground": "https://media.tenor.com/s3PhCO9YgvkAAAAd/tenor.gif",
+    "profileBackgroundPosition": "center"
   },
   "Ciesa": {
     "username": "Ciesa",
