@@ -58,6 +58,7 @@ const { handleInputCommand } = require("./commands/input");
 const { getMemberActivity, recordChatMessage, recordVoiceStateChange } = require("./commands/activity");
 
 const processedMessageIds = new Map();
+const recentCommandSignatures = new Map();
 
 function markMessageProcessed(message) {
     const now = Date.now();
@@ -68,6 +69,10 @@ function markMessageProcessed(message) {
             processedMessageIds.delete(message.id);
         }
     }, 3000);
+}
+
+function getCommandSignature(message) {
+    return `${message.author.id}:${message.content.trim().toLowerCase()}`;
 }
 
 // ===== GLOBAL ERROR HANDLERS =====
@@ -279,6 +284,15 @@ client.on('messageCreate', async (message) => {
     if (processedMessageIds.has(message.id)) {
         return;
     }
+
+    const commandSignature = getCommandSignature(message);
+    const previousTimestamp = recentCommandSignatures.get(commandSignature);
+    if (previousTimestamp && Date.now() - previousTimestamp < 3000) {
+        return;
+    }
+    recentCommandSignatures.set(commandSignature, Date.now());
+    setTimeout(() => recentCommandSignatures.delete(commandSignature), 3000);
+
     markMessageProcessed(message);
 
     recordChatMessage(message.author);
