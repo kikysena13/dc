@@ -906,7 +906,7 @@
         .member-cell.profile-theme-cell {
             background-image: linear-gradient(90deg, rgba(17, 15, 14, .85), rgba(17, 15, 14, .58), rgba(17, 15, 14, .82)), var(--profile-background, none);
             background-size: cover;
-            background-position: center;
+            background-position: var(--profile-background-position, center);
             background-repeat: no-repeat;
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04);
         }
@@ -1156,7 +1156,7 @@
                             ? (spendingRole === 'WHELL' ? member.whellTheme : member.leviaTheme)
                             : (member.whellTheme || member.leviaTheme || null);
                 const themeClass = theme ? ` profile-theme theme-${theme.tier}` : '';
-                const themeStyle = theme?.background ? ` style="--profile-background:url('${escapeHtml(theme.background).replace(/'/g, '%27')}')"` : '';
+                const themeStyle = theme?.background ? ` style="--profile-background:url('${escapeHtml(theme.background).replace(/'/g, '%27')}');--profile-background-position:${escapeHtml(theme.backgroundPosition || 'center')}"` : '';
                 const roleLabel = spendingRole === 'WHELL' ? 'WHELL' : spendingRole === 'LEVIA' ? 'LEVIA' : '';
                 const finalTitle = selectedRole === 'SPENDING' ? roleLabel : title;
                 const progressCell = selectedRole ? `<span class="level">${escapeHtml(finalTitle)}</span>` : `<div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${member.progress}% menuju level berikutnya</span></div>`;

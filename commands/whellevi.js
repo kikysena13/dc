@@ -50,11 +50,12 @@ function normalizeBackgroundUrl(backgroundUrl) {
 	return trimmed;
 }
 
-function setProfileBackground(userId, username, backgroundUrl) {
+function setProfileBackground(userId, username, backgroundUrl, cropPosition = null) {
 	const points = readPoints();
 	const memberPoints = points[userId] || { username, whellRp: 0, leviaRp: 0 };
 	memberPoints.username = username;
 	memberPoints.profileBackground = normalizeBackgroundUrl(backgroundUrl);
+	memberPoints.profileBackgroundPosition = cropPosition || memberPoints.profileBackgroundPosition || "center";
 	points[userId] = memberPoints;
 	writePoints(points);
 }
@@ -82,7 +83,15 @@ function getRoleSpending(points, roles, preferredRole = null) {
 	let tier = "silver";
 	if (normalizedAmount >= THEME_THRESHOLDS.exclusive) tier = "exclusive";
 	else if (normalizedAmount >= THEME_THRESHOLDS.custom) tier = "custom";
-	return { role: normalizeRole(role), amount, normalizedAmount, currency, tier, background: normalizeBackgroundUrl(points.profileBackground) };
+	return {
+		role: normalizeRole(role),
+		amount,
+		normalizedAmount,
+		currency,
+		tier,
+		background: normalizeBackgroundUrl(points.profileBackground),
+		backgroundPosition: points.profileBackgroundPosition || "center"
+	};
 }
 
 function normalizeRole(value) {

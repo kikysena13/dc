@@ -1,22 +1,42 @@
 const { setProfileBackground, setProfileBio, getPoints, getRoleSpending } = require("./whellevi");
 
 const URL_PATTERN = /^https?:\/\/\S+$/i;
+const VALID_CROP_POSITIONS = new Set(["center", "top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right"]);
 
-function extractBackgroundUrl(input) {
-    if (!input) return null;
+function parseCropPosition(value) {
+    if (!value) return null;
 
-    const trimmed = input.trim();
-    const markdownMatch = trimmed.match(/^\[[^\]]+\]\((https?:\/\/[^\s)]+)\)$/i);
-    if (markdownMatch) {
-        return markdownMatch[1];
+    const normalized = value.trim().toLowerCase().replace(/^crop\s*[:=]?\s*/i, "");
+    const words = normalized.split(/\s+/).filter(Boolean);
+    if (!words.length) return null;
+
+    if (words.length === 1) {
+        return VALID_CROP_POSITIONS.has(words[0]) ? words[0] : null;
     }
 
-    const rawMatch = trimmed.match(/^https?:\/\/\S+$/i);
-    if (rawMatch) {
-        return trimmed;
+    if (words.length === 2) {
+        const combined = `${words[0]}-${words[1]}`;
+        return VALID_CROP_POSITIONS.has(combined) ? combined : null;
     }
 
     return null;
+}
+
+function extractBackgroundUrl(input) {
+    if (!input) return { url: null, crop: null };
+
+    const trimmed = input.trim();
+    const markdownMatch = trimmed.match(/^\[[^\]]+\]\((https?:\/\/[^\s)]+)\)(.*)$/i);
+    if (markdownMatch) {
+        return { url: markdownMatch[1], crop: parseCropPosition(markdownMatch[2]) };
+    }
+
+    const rawUrlMatch = trimmed.match(/^(https?:\/\/\S+)(.*)$/i);
+    if (rawUrlMatch) {
+        return { url: rawUrlMatch[1], crop: parseCropPosition(rawUrlMatch[2]) };
+    }
+
+    return { url: null, crop: null };
 }
 
 async function handleInputCommand(message) {
@@ -45,14 +65,14 @@ async function handleInputCommand(message) {
         return true;
     }
 
-    const backgroundUrl = extractBackgroundUrl(parts.slice(1).join(" "));
+    const { url: backgroundUrl, crop } = extractBackgroundUrl(parts.slice(1).join(" "));
     if (!backgroundUrl || !URL_PATTERN.test(backgroundUrl)) {
-        await message.reply("Gunakan: `!addinput https://domain.com/gambar-atau-gif`.");
+        await message.reply("Gunakan: `!addinput https://domain.com/gambar-atau-gif` atau `!addinput https://domain.com/gambar-atau-gif crop=top-left`.");
         return true;
     }
 
-    setProfileBackground(message.author.id, message.author.username, backgroundUrl);
-    await message.reply("Background profil berhasil disimpan. Tema akan tampil di leaderboard setelah refresh.");
+    setProfileBackground(message.author.id, message.author.username, backgroundUrl, crop);
+    await message.reply(`Background profil berhasil disimpan${crop ? ` dengan crop ${crop}` : ""}. Tema akan tampil di leaderboard setelah refresh.`);
     return true;
 }
 
