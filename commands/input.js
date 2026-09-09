@@ -88,7 +88,6 @@ async function handleInputCommand(message) {
 
     const { url: backgroundUrl, crop } = extractBackgroundUrl(parts.slice(1).join(" "));
     if (!backgroundUrl || !URL_PATTERN.test(backgroundUrl)) {
-        await message.reply("Gunakan: `!addinput https://domain.com/gambar-atau-gif` atau `!addinput https://domain.com/gambar-atau-gif crop=top-left`.");
         return true;
     }
 
