@@ -27,7 +27,7 @@ Dashboard Top Whell dan Top Levia sekarang diurutkan berdasarkan total RP spendi
 !whellevi add @member 30000000 RP WHELL
 
 !addinputbio Bio saya
-!addinput https://i.pinimg.com/736x/c9/c9/ff/c9c9ff2eed3dff5c3b9f7c0c033704da.jpg
+!addinput https://tenor.com/inyFxs4BmKB.gif
 
 !whellevi resetall @member
 !whellevi reset @member LEVIA
