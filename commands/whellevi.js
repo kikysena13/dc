@@ -223,20 +223,25 @@ async function handleWhellLeviCommand(message) {
 		return true;
 	}
 
-	const argumentStart = action === "reset" ? 3 : 3;
-	const amountInput = parts[argumentStart] || "";
-	let amountTokenIndex = argumentStart;
-	let currencyToken = normalizeRole(parts[argumentStart + 1]);
-	let roleIndex = argumentStart + 1;
+	let amountInput = "";
+	let currencyToken = "$";
+	let roleName = null;
 
-	if (currencyToken && ["RP", "$", "DOLLAR", "USD"].includes(currencyToken)) {
-		roleIndex = argumentStart + 2;
-		currencyToken = currencyToken === "DOLLAR" || currencyToken === "USD" ? "$" : currencyToken;
+	if (action === "reset") {
+		roleName = normalizeRole(parts[3]);
 	} else {
-		currencyToken = amountInput.trim().startsWith("$") ? "$" : "$";
+		amountInput = parts[3] || "";
+		const rawCurrencyToken = normalizeRole(parts[4]);
+		const hasCurrencyToken = rawCurrencyToken && ["RP", "$", "DOLLAR", "USD"].includes(rawCurrencyToken);
+
+		if (hasCurrencyToken) {
+			currencyToken = rawCurrencyToken === "DOLLAR" || rawCurrencyToken === "USD" ? "$" : rawCurrencyToken;
+			roleName = normalizeRole(parts[5]);
+		} else {
+			roleName = normalizeRole(parts[4]);
+		}
 	}
 
-	const roleName = normalizeRole(parts[roleIndex]);
 	const pointsKey = ROLE_NAMES[roleName];
 	if (!target || !pointsKey) {
 		await message.reply(getHelpMessage());
