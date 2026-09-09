@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b0f17">
+    <title>Midnight Lounge | Leaderboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+        :root {
+            --bg: #080b11;
+            --panel: #10151f;
+            --panel-light: #151c29;
+            --line: rgba(255, 255, 255, .08);
+            --muted: #8490a5;
+            --text: #f3f6fb;
+            --cyan: #45d9d0;
+            --yellow: #f4c95d;
+            --purple: #9d8cff;
+            --red: #ff6f85;
+            --shadow: 0 20px 60px rgba(0, 0, 0, .24);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--text);
+            background: var(--bg);
+            font-family: 'DM Sans', sans-serif;
+            min-width: 320px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: .34;
+            background-image: linear-gradient(rgba(255, 255, 255, .018) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .018) 1px, transparent 1px);
+            background-size: 44px 44px;
+            mask-image: linear-gradient(to bottom, black, transparent 72%);
+        }
+
+        button {
+            font: inherit;
+        }
+
+        .app {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .sidebar {
+            width: 248px;
+            flex-shrink: 0;
+            padding: 28px 18px;
+            border-right: 1px solid var(--line);
+            background: rgba(12, 16, 24, .9);
+            display: flex;
+                width: 100%;
+            position: fixed;
+            inset: 0 auto 0 0;
+            z-index: 4;
+        }
+
+        .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding: 0 10px 32px;
+        }
+
+        .brand-mark {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            display: grid;
+            place-items: center;
+            color: #071010;
+            font-weight: 700;
+            background: var(--cyan);
+            box-shadow: 0 0 28px rgba(69, 217, 208, .26);
+        }
+
+        .brand strong {
+            display: block;
+            font-family: 'Space Grotesk';
+            font-size: 15px;
+            letter-spacing: -.3px;
+        }
+
+        .brand span {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .nav-label {
+            color: #586377;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            padding: 0 12px 10px;
+            text-transform: uppercase;
+        }
+
+        nav {
+            display: grid;
+            gap: 5px;
+        }
+
+        .nav-item {
+            display: flex;
+            gap: 13px;
+            align-items: center;
+            border: 0;
+            border-radius: 10px;
+            padding: 12px;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            text-align: left;
+            font-size: 13px;
+            transition: .2s ease;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            color: var(--text);
+            background: rgba(69, 217, 208, .1);
+        }
+
+        .nav-item.active {
+            box-shadow: inset 3px 0 var(--cyan);
+        }
+
+        .nav-icon {
+            width: 18px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+            border-top: 1px solid var(--line);
+            padding: 18px 10px 0;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .online {
+            width: 7px;
+            height: 7px;
+            background: var(--cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--cyan);
+        }
+
+        .main {
+            margin-left: 248px;
+            width: calc(100% - 248px);
+            padding: 0 38px 48px;
+        }
+
+        .topbar {
+            height: 84px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .breadcrumb {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .breadcrumb b {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .period {
+            padding: 9px 12px;
+            color: var(--muted);
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-size: 11px;
+        }
+
+        .profile {
+            display: flex;
+            gap: 9px;
+            align-items: center;
+            padding-left: 12px;
+            border-left: 1px solid var(--line);
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #222b3d;
+        }
+
+        .profile-text strong {
+            font-size: 12px;
+            display: block;
+        }
+
+        .profile-text span {
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .content {
+            max-width: 1360px;
+            margin: auto;
+        }
+
+        .hero {
+            padding: 36px 0 28px;
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 30px;
+        }
+
+        .eyebrow {
+            color: var(--cyan);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        h1 {
+            font-family: 'Space Grotesk';
+            font-size: clamp(28px, 4vw, 42px);
+            letter-spacing: -1.8px;
+            margin: 9px 0 7px;
+        }
+
+        .hero p {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .live-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(69, 217, 208, .25);
+            border-radius: 30px;
+            padding: 9px 13px;
+            color: var(--cyan);
+            background: rgba(69, 217, 208, .06);
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        .stat-card {
+            padding: 18px;
+            background: linear-gradient(145deg, rgba(21, 28, 41, .95), rgba(15, 20, 30, .95));
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            animation: rise .5s both;
+        }
+
+        .stat-card:nth-child(2) {
+            animation-delay: .06s;
+        }
+
+        .stat-card:nth-child(3) {
+            animation-delay: .12s;
+        }
+
+        .stat-card:nth-child(4) {
+            animation-delay: .18s;
+        }
+
+        .stat-head {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .stat-icon {
+            color: var(--cyan);
+            font-size: 17px;
+        }
+
+        .stat-value {
+            font-family: 'Space Grotesk';
+            font-size: 25px;
+            margin: 15px 0 4px;
+        }
+
+        .stat-foot {
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .up {
+            color: var(--cyan);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr);
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .panel {
+            background: rgba(16, 21, 31, .9);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 19px 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .panel-title {
+            font-family: 'Space Grotesk';
+            font-size: 15px;
+        }
+
+        .panel-subtitle {
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .text-button {
+            border: 0;
+            color: var(--cyan);
+            background: transparent;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .podium {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 25px 18px 20px;
+            align-items: end;
+        }
+
+        .podium-item {
+            text-align: center;
+            position: relative;
+        }
+
+        .podium-item:nth-child(1) {
+            order: 2;
+        }
+
+        .podium-item:nth-child(2) {
+            order: 1;
+        }
+
+        .podium-item:nth-child(3) {
+            order: 3;
+        }
+
+        .podium-avatar {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--yellow);
+            margin-bottom: 10px;
+        }
+
+        .podium-item:nth-child(2) .podium-avatar {
+            border-color: #abb5c7;
+            width: 42px;
+            height: 42px;
+        }
+
+        .podium-item:nth-child(3) .podium-avatar {
+            border-color: #b77d58;
+            width: 42px;
+            height: 42px;
+        }
+
+        .podium-name {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .podium-xp {
+            color: var(--yellow);
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        .podium-rank {
+            margin: 13px auto 0;
+            padding: 12px 5px;
+            background: rgba(244, 201, 93, .09);
+            color: var(--yellow);
+            font-family: 'Space Grotesk';
+            font-size: 20px;
+            border-radius: 8px 8px 0 0;
+            max-width: 106px;
+        }
+
+        .podium-item:nth-child(2) .podium-rank {
+            background: rgba(171, 181, 199, .08);
+            color: #abb5c7;
+            padding-top: 7px;
+        }
+
+        .podium-item:nth-child(3) .podium-rank {
+            background: rgba(183, 125, 88, .08);
+            color: #b77d58;
+            padding-top: 7px;
+        }
+
+        .reset-box {
+            padding: 19px 20px;
+        }
+
+        .reset-date {
+            color: var(--text);
+            font-family: 'Space Grotesk';
+            font-size: 22px;
+            margin: 10px 0 3px;
+        }
+
+        .reset-box p {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .progress {
+            height: 5px;
+            border-radius: 5px;
+            background: #252e3d;
+            overflow: hidden;
+            margin-top: 18px;
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            width: 68%;
+            background: var(--cyan);
+            border-radius: inherit;
+        }
+
+        .reset-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: 10px;
+            margin-top: 7px;
+        }
+
+        .table-panel {
+            margin-top: 18px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 5px;
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 3px;
+        }
+
+        .filter {
+            border: 0;
+            color: var(--muted);
+            background: transparent;
+            border-radius: 6px;
+            padding: 7px 11px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .filter.active {
+            color: #071010;
+            background: var(--cyan);
+            font-weight: 700;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 650px;
+        }
+
+        th {
+            color: #596477;
+            font-size: 10px;
+            font-weight: 600;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+        }
+
+        th,
+        td {
+            padding: 13px 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        tbody tr {
+            transition: background .2s;
+        }
+
+        tbody tr:hover {
+            background: rgba(69, 217, 208, .04);
+        }
+
+        td {
+            color: #dbe2ef;
+            font-size: 12px;
+        }
+
+        .rank {
+            color: var(--muted);
+            font-family: 'Space Grotesk';
+            width: 55px;
+        }
+
+        .rank.top {
+            color: var(--yellow);
+            font-weight: 700;
+        }
+
+        .member {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .member .avatar {
+            width: 30px;
+            height: 30px;
+        }
+
+        .member strong {
+            display: block;
+            font-size: 12px;
+        }
+
+        .member span {
+            display: block;
+            color: var(--muted);
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        .level {
+            display: inline-flex;
+            border: 1px solid rgba(157, 140, 255, .25);
+            border-radius: 5px;
+            padding: 3px 6px;
+            color: var(--purple);
+            background: rgba(157, 140, 255, .08);
+            font-size: 10px;
+        }
+
+        .xp {
+            font-family: 'Space Grotesk';
+        }
+
+        .xp small {
+            color: var(--muted);
+            font-family: 'DM Sans';
+            font-size: 10px;
+        }
+
+        .xp-progress {
+            min-width: 115px;
+        }
+
+        .xp-progress .progress {
+            margin: 0 0 5px;
+            height: 4px;
+        }
+
+        .xp-progress span {
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .dummy-note {
+            margin-top: 12px;
+            padding: 11px 13px;
+            border: 1px dashed rgba(244, 201, 93, .3);
+            border-radius: 8px;
+            color: #cdbb81;
+            background: rgba(244, 201, 93, .04);
+            font-size: 10px;
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 980px) {
+            .sidebar {
+                width: 72px;
+                padding: 22px 10px;
+                align-items: center;
+            }
+
+            .brand {
+                padding: 0 0 32px;
+            }
+
+            .brand-copy,
+            .nav-label,
+            .nav-item span:not(.nav-icon),
+            .sidebar-bottom {
+                display: none;
+            }
+
+            .nav-item {
+                width: 46px;
+                justify-content: center;
+                padding: 12px 0;
+            }
+
+            .main {
+                margin-left: 72px;
+                width: calc(100% - 72px);
+                padding: 0 22px 40px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .main {
+                padding: 0 14px 32px;
+            }
+
+                    .hero { min-height: 410px; margin-top: 12px; padding: 25px 20px; }
+
+            .period,
+            .profile-text {
+                display: none;
+            }
+
+            .profile {
+                border-left: 0;
+                padding-left: 0;
+            }
+
+            .hero {
+                padding: 27px 0 22px;
+                align-items: start;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 9px;
+            }
+
+            .stat-card {
+                padding: 14px;
+            }
+
+            .stat-value {
+                font-size: 21px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel-header {
+                align-items: start;
+                gap: 12px;
+                flex-direction: column;
+            }
+
+            .filters {
+                width: 100%;
+                overflow-x: auto;
+            }
+
+            .filter {
+                flex: 1;
+                white-space: nowrap;
+            }
+
+            th,
+            td {
+                padding-left: 13px;
+                padding-right: 13px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .stats {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .podium {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+        }
+
+        /* Companion-site visual direction inspired by the reference layout. */
+        :root {
+            --bg: #11100f;
+            --panel: #1a1816;
+            --panel-light: #24201d;
+            --line: rgba(255, 245, 225, .12);
+            --muted: #a59d91;
+            --text: #f7f1e7;
+            --cyan: #e3a55f;
+            --yellow: #f2cf8c;
+            --purple: #c5a0c9;
+            --shadow: 0 22px 70px rgba(0, 0, 0, .32);
+        }
+
+        body {
+            background: #11100f;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        body::before {
+            opacity: .2;
+            background-size: 68px 68px;
+        }
+
+        .sidebar {
+            width: 100%;
+            height: 72px;
+            padding: 0 42px;
+            border-right: 0;
+            border-bottom: 1px solid var(--line);
+            background: rgba(17, 16, 15, .92);
+            backdrop-filter: blur(18px);
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            position: fixed;
+            inset: 0 0 auto;
+        }
+
+        .brand { padding: 0; gap: 11px; }
+        .brand-mark { width: 32px; height: 32px; border-radius: 3px; color: #1a120a; background: var(--cyan); box-shadow: none; font-family: 'Space Grotesk'; }
+        .brand strong { font-size: 14px; letter-spacing: .2px; }
+        .brand span { font-size: 10px; }
+        .nav-label { display: none; }
+        nav { display: flex; justify-content: center; gap: 3px; }
+        .nav-item { border-radius: 3px; padding: 10px 15px; color: #938b81; font-size: 11px; letter-spacing: .4px; }
+        .nav-item:hover, .nav-item.active { color: var(--text); background: rgba(227, 165, 95, .11); }
+        .nav-item.active { box-shadow: inset 0 -2px var(--cyan); }
+        .nav-icon { display: none; }
+        .sidebar-bottom { margin: 0; padding: 0; border: 0; }
+        .server-status { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .main { margin: 72px 0 0; width: 100%; padding: 0 42px 70px; }
+        .topbar { height: 62px; }
+        .breadcrumb { font-size: 10px; text-transform: uppercase; letter-spacing: 1.3px; }
+        .period { border-radius: 2px; background: transparent; text-transform: uppercase; letter-spacing: .8px; }
+        .profile { border-left: 0; }
+        .content { max-width: 1280px; }
+        .hero {
+            min-height: 380px;
+            width: 100%;
+            margin-top: 0px;
+            padding: 42px;
+            align-items: end;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            background-image: linear-gradient(90deg, rgba(12, 10, 9, .97) 0%, rgba(12, 10, 9, .76) 43%, rgba(12, 10, 9, .2) 100%), url('https://media.discordapp.net/attachments/1546690142700310608/1546793970884026368/e8339b40-d8fe-456b-a557-0c1ad3f18a10.jpg?ex=6aa113a4&is=6a9fc224&hm=336251af8a31e8cda1e2c9f0ae4a1c659962d9ef8995ec828b176b92885d850e&=&format=webp');
+            background-position: center center;
+            background-size: cover;
+            box-shadow: var(--shadow);
+        }
+        .hero::after { content: 'Midnight Lounge / COMMUNITY ARCHIVE'; position: absolute; right: 23px; top: 20px; color: rgba(247, 241, 231, .58); font-size: 9px; letter-spacing: 2px; writing-mode: vertical-rl; }
+        .hero > div:first-child { position: relative; z-index: 1; max-width: 560px; }
+        .eyebrow { color: var(--cyan); letter-spacing: 2px; font-size: 10px; }
+        h1 { max-width: 550px; font-size: clamp(40px, 7vw, 82px); line-height: .94; letter-spacing: -3px; text-transform: uppercase; }
+        .hero p { max-width: 390px; line-height: 1.7; color: #c4bcb0; font-size: 13px; }
+        .live-pill { border-radius: 2px; border-color: rgba(227, 165, 95, .35); background: rgba(17, 16, 15, .65); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .stats { margin-top: 18px; gap: 0; border: 1px solid var(--line); background: var(--panel); }
+        .stat-card { border: 0; border-right: 1px solid var(--line); border-radius: 0; box-shadow: none; background: transparent; padding: 18px 22px; }
+        .stat-card:last-child { border-right: 0; }
+        .stat-head { text-transform: uppercase; letter-spacing: 1.1px; font-size: 9px; }
+        .stat-icon { color: var(--cyan); }
+        .stat-value { font-size: 26px; margin-top: 11px; }
+        .grid { margin-top: 40px; gap: 18px; }
+        .panel { border-radius: 2px; background: rgba(26, 24, 22, .8); box-shadow: none; }
+        .panel-header { padding: 20px 22px; }
+        .panel-title { text-transform: uppercase; letter-spacing: 1px; font-size: 13px; }
+        .panel-subtitle { font-size: 10px; }
+        .podium { padding: 24px 18px 20px; }
+        .podium-item { padding: 15px 5px 0; border: 1px solid var(--line); background: linear-gradient(160deg, rgba(227, 165, 95, .08), transparent 55%); }
+        .podium-item:nth-child(1) { padding-top: 25px; }
+        .podium-rank { border-radius: 0; max-width: none; margin-top: 17px; background: rgba(227, 165, 95, .12); }
+        .reset-box { min-height: 225px; padding: 24px 22px; }
+        .reset-date { font-size: 28px; }
+        .table-panel { margin-top: 40px; }
+        .table-panel .panel-header { align-items: end; }
+        .filters { border-radius: 2px; }
+        .filter { border-radius: 1px; text-transform: uppercase; letter-spacing: .7px; }
+        th { font-size: 9px; letter-spacing: 1.1px; }
+        td { border-bottom-color: rgba(255, 245, 225, .08); }
+            .level { border-radius: 2px; }
+        .dummy-note { border-radius: 2px; }
+
+        tbody tr.profile-theme {
+            position: relative;
+            transition: transform .2s ease, box-shadow .2s ease;
+            overflow: hidden;
+            background-color: rgba(17, 15, 14, .72);
+        }
+        tbody tr.profile-theme td:first-child { border-left: 2px solid transparent; }
+        tbody tr.profile-theme td {
+            position: relative;
+            z-index: 1;
+            background: transparent;
+            border-top: 0;
+            border-bottom: 0;
+        }
+        tbody tr.theme-exclusive {
+            background-color: rgba(255, 196, 76, .08);
+            box-shadow: inset 0 0 24px rgba(255, 204, 92, .12), 0 0 14px rgba(255, 192, 72, .14);
+        }
+        tbody tr.theme-exclusive td:first-child { border-left-color: #f2c45f; }
+        tbody tr.theme-custom {
+            background-color: rgba(17, 15, 14, .72);
+            box-shadow: inset 0 0 0 1px rgba(227, 165, 95, .7), inset 0 0 22px rgba(0, 0, 0, .5), 0 0 12px rgba(227, 165, 95, .14);
+        }
+        tbody tr.theme-custom td:first-child { border-left-color: var(--cyan); }
+        tbody tr.theme-silver {
+            background-color: rgba(196, 200, 214, .06);
+            box-shadow: inset 0 0 0 1px rgba(213, 220, 230, .28), inset 0 0 18px rgba(194, 205, 221, .1), 0 0 10px rgba(208, 218, 232, .1);
+        }
+
+        .member-cell {
+            position: relative;
+            overflow: hidden;
+            border-top: 0;
+            border-bottom: 0;
+            background-color: rgba(17, 15, 14, .2);
+        }
+
+        .member-cell.profile-theme-cell {
+            background-image: linear-gradient(90deg, rgba(17, 15, 14, .85), rgba(17, 15, 14, .58), rgba(17, 15, 14, .82)), var(--profile-background, none);
+            background-size: cover;
+            background-position: var(--profile-background-position, center);
+            background-repeat: no-repeat;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04);
+        }
+
+        .member-cell.profile-theme-cell .member {
+            position: relative;
+            z-index: 1;
+        }
+        tbody tr.theme-silver td:first-child { border-left-color: #cbd4df; }
+
+        @media (max-width: 700px) {
+            .sidebar {
+                height: auto;
+                min-height: 116px;
+                padding: 12px;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .brand-copy {
+                display: block;
+            }
+            .brand strong { font-size: 13px; }
+            .brand span { font-size: 9px; }
+            nav {
+                display: grid;
+                grid-auto-flow: column;
+                grid-auto-columns: max-content;
+                justify-content: start;
+                gap: 8px;
+                width: 100%;
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+            nav::-webkit-scrollbar { display: none; }
+            .nav-item span:not(.nav-icon) { display: inline; }
+            .nav-item {
+                display: block;
+                min-width: max-content;
+                padding: 8px 10px;
+                white-space: nowrap;
+                font-size: 10px;
+            }
+            .nav-icon { display: none; }
+            .sidebar-bottom { display: none; }
+            .main {
+                margin: 116px 0 0;
+                width: 100%;
+                padding: 0 12px 38px;
+            }
+            .topbar { height: 58px; }
+            .hero {
+                min-height: 410px;
+                margin-top: 12px;
+                padding: 25px 20px;
+                background-position: 58% center;
+            }
+            h1 { font-size: 47px; letter-spacing: -2px; }
+            .hero::after { display: none; }
+            .stats { grid-template-columns: 1fr 1fr; }
+            .stat-card { border-bottom: 1px solid var(--line); }
+            .stat-card:nth-child(2) { border-right: 0; }
+            .grid { margin-top: 26px; }
+            .table-panel { margin-top: 26px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">GT</div>
+                <div class="brand-copy"><strong>Midnight Lounge</strong><span>Community dashboard</span></div>
+            </div>
+            <div class="nav-label">Workspace</div>
+            <nav aria-label="Navigasi utama">
+                <button class="nav-item active"><span class="nav-icon">⌂</span><span>Main</span></button>
+                <button class="nav-item"><span class="nav-icon">♛</span><span>Leaderboard</span></button>
+                <button class="nav-item" data-role-filter="SPENDING"><span class="nav-icon">◉</span><span>Top Whell &amp; Levia</span></button>
+                <button class="nav-item"><span class="nav-icon">◷</span><span>Riwayat Musim</span></button>
+
+            </nav>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <div class="breadcrumb">Workspace / <b>Ringkasan</b></div>
+                <div class="top-actions"><span class="period">Musim aktif: Juni 2026</span>
+                </div>
+            </header>
+            <div class="content">
+                <section class="hero">
+                    <div>
+                        <div class="eyebrow">Aktivitas komunitas</div>
+                        <h1>Selamat datang di Midnight Lounge</h1>
+                    </div>
+                </section>
+                <section class="stats" aria-label="Statistik server">
+                    <article class="stat-card">
+                        <div class="stat-head"><span>Total Member</span><span class="stat-icon">♙</span></div>
+                        <div class="stat-value" id="total-members">0</div>
+                        <div class="stat-foot"><span class="up">+12.4%</span> dari bulan lalu</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-head"><span>Member Aktif</span><span class="stat-icon">◉</span></div>
+                        <div class="stat-value">486</div>
+                        <div class="stat-foot"><span class="up">38.9%</span> dari total member</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-head"><span>Pesan Bulan Ini</span><span class="stat-icon">✦</span></div>
+                        <div class="stat-value">24,891</div>
+                        <div class="stat-foot"><span class="up">+8.7%</span> aktivitas chat</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-head"><span>Aktivitas Voice</span><span class="stat-icon">◌</span></div>
+                        <div class="stat-value">1,840<span style="font-size:13px;color:var(--muted)"> jam</span></div>
+                        <div class="stat-foot"><span class="up">+16.2%</span> waktu voice</div>
+                    </article>
+                </section>
+
+                <section class="grid">
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h2 class="panel-title">Member teratas</h2>
+                                <p class="panel-subtitle">Kontributor paling aktif musim ini</p>
+                            </div><button class="text-button" data-scroll="leaderboard">Lihat semua →</button>
+                        </div>
+                        <div class="podium" id="podium"></div>
+                    </article>
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h2 class="panel-title">Musim berjalan</h2>
+                                <p class="panel-subtitle">Leaderboard bulanan</p>
+                            </div><span class="live-pill" style="padding:6px 9px;font-size:10px">AKTIF</span>
+                        </div>
+                        <div class="reset-box">
+                            <div class="eyebrow">Reset berikutnya</div>
+                            <div class="reset-date">01 Juli 2026</div>
+                            <p>Leaderboard akan dimulai dari awal untuk musim baru.</p>
+                            <div class="progress"><i style="width:68%"></i></div>
+                            <div class="reset-meta"><span>18 hari tersisa</span><span>68% berjalan</span></div>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="panel table-panel" id="leaderboard">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title" id="leaderboard-title">Leaderboard keaktifan</h2>
+                            <p class="panel-subtitle" id="leaderboard-subtitle">Peringkat berdasarkan aktivitas chat dan voice</p>
+                        </div>
+                        <div class="filters" role="tablist"><button class="filter active"
+                                data-filter="overall">Overall</button><button class="filter"
+                                data-filter="chat">Chat</button><button class="filter"
+                                data-filter="voice">Voice</button><button class="filter"
+                                data-filter="monthly">Bulanan</button></div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Member</th>
+                                    <th id="member-title-heading">Level</th>
+                                    <th id="spending-heading">Total XP</th>
+                                    <th id="progress-title-heading">Progress level</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let PREVIEW_DATA = { members: [] };
+
+        const formatXp = (value) => new Intl.NumberFormat('id-ID').format(value);
+        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+        let selectedRole = null;
+        const USD_TO_RP = 50000000 / 3000;
+        const getSpendingRole = (member) => member.spendingRole === 'WHELL' || member.spendingRole === 'LEVIA'
+            ? member.spendingRole
+            : member.whellRp > 0 ? 'WHELL' : member.leviaRp > 0 ? 'LEVIA' : null;
+        const getNormalizedSpendingValue = (member, role) => {
+            const rawAmount = role === 'WHELL'
+                ? Number(member.whellRp || 0)
+                : Number(member.leviaRp || 0);
+            const currency = role === 'WHELL'
+                ? member.whellCurrency
+                : member.leviaCurrency;
+            return currency === 'RP' ? rawAmount : rawAmount * USD_TO_RP;
+        };
+        const getVisibleMembers = () => selectedRole === 'SPENDING'
+            ? PREVIEW_DATA.members.filter((member) => member.roles.some((role) => {
+                const normalizedRole = role.toUpperCase();
+                return normalizedRole === 'WHELL' || normalizedRole === 'LEVIA' || normalizedRole === 'LEVIATHAN';
+            }))
+            : selectedRole
+            ? PREVIEW_DATA.members.filter((member) => member.roles.some((role) => {
+                const normalizedRole = role.toUpperCase();
+                return selectedRole === 'LEVIA'
+                    ? normalizedRole === 'LEVIA' || normalizedRole === 'LEVIATHAN'
+                    : normalizedRole === selectedRole;
+            }))
+            : PREVIEW_DATA.members;
+        const sortedMembers = (filter) => {
+            return [...getVisibleMembers()].sort((a, b) => {
+                if (selectedRole === 'SPENDING') {
+                    const aRole = getSpendingRole(a) || 'WHELL';
+                    const bRole = getSpendingRole(b) || 'WHELL';
+                    return getNormalizedSpendingValue(b, bRole) - getNormalizedSpendingValue(a, aRole);
+                }
+
+                if (selectedRole === 'WHELL' || selectedRole === 'LEVIA') {
+                    return getNormalizedSpendingValue(b, selectedRole) - getNormalizedSpendingValue(a, selectedRole);
+                }
+
+                const xpField = filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp';
+                return b[xpField] - a[xpField];
+            });
+        };
+        const renderLeaderboard = (filter = 'overall') => {
+            const members = sortedMembers(filter);
+            document.getElementById('leaderboard-body').innerHTML = members.map((member, index) => {
+                const spendingRole = getSpendingRole(member);
+                const xp = selectedRole === 'SPENDING'
+                    ? spendingRole === 'WHELL' ? member.whellRp : member.leviaRp
+                    : selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp'];
+                const activityLabel = filter === 'chat' ? 'pesan' : filter === 'voice' ? 'menit' : 'poin';
+                const value = selectedRole ? `${member[(selectedRole === 'WHELL' || spendingRole === 'WHELL') ? 'whellCurrency' : 'leviaCurrency'] === 'RP' ? 'Rp ' : '$'}${formatXp(xp)}` : `${formatXp(xp)} <small>${activityLabel}</small>`;
+                const title = selectedRole ? member.bio || 'Belum ada bio' : `LVL ${member.level}`;
+                const theme = selectedRole === 'WHELL'
+                    ? member.whellTheme
+                    : selectedRole === 'LEVIA'
+                        ? member.leviaTheme
+                        : selectedRole === 'SPENDING'
+                            ? (spendingRole === 'WHELL' ? member.whellTheme : member.leviaTheme)
+                            : (member.whellTheme || member.leviaTheme || null);
+                const themeClass = theme ? ` profile-theme theme-${theme.tier}` : '';
+                const themeStyle = theme?.background ? ` style="--profile-background:url('${escapeHtml(theme.background).replace(/'/g, '%27')}');--profile-background-position:${escapeHtml(theme.backgroundPosition || 'center')}"` : '';
+                const roleLabel = spendingRole === 'WHELL' ? 'WHELL' : spendingRole === 'LEVIA' ? 'LEVIA' : '';
+                const finalTitle = selectedRole === 'SPENDING' ? roleLabel : title;
+                const progressCell = selectedRole ? `<span class="level">${escapeHtml(finalTitle)}</span>` : `<div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${member.progress}% menuju level berikutnya</span></div>`;
+                return `<tr class="${themeClass.trim()}"><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td class="member-cell${theme ? ' profile-theme-cell' : ''}"${themeStyle}><div class="member"><img class="avatar" src="${escapeHtml(member.avatar)}" alt="Avatar ${escapeHtml(member.username)}"><div><strong>${escapeHtml(member.username)}</strong><span>ID ${escapeHtml(member.id)}</span></div></div></td><td>${escapeHtml(title)}</td><td class="xp">${value}</td><td>${progressCell}</td></tr>`;
+            }).join('');
+        };
+        const renderPodium = () => {
+            const members = sortedMembers('overall').slice(0, 3);
+            document.getElementById('podium').innerHTML = members.map((member, index) => {
+                const spendingRole = getSpendingRole(member);
+                const points = selectedRole === 'SPENDING' ? spendingRole === 'WHELL' ? member.whellRp : member.leviaRp : selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member.xp;
+                const currency = selectedRole === 'SPENDING' ? spendingRole === 'WHELL' ? member.whellCurrency : member.leviaCurrency : selectedRole === 'WHELL' ? member.whellCurrency : member.leviaCurrency;
+                return `<div class="podium-item"><img class="avatar podium-avatar" src="${member.avatar}" alt="Avatar ${member.username}"><div class="podium-name">${member.username}</div><div class="podium-xp">${selectedRole ? currency === 'RP' ? 'Rp ' : '$' : ''}${formatXp(points)}${selectedRole ? '' : ' XP'}</div><div class="podium-rank">${index + 1}</div></div>`;
+            }).join('');
+        };
+        const loadLeaderboard = async () => {
+            const apiUrl = 'https://midnight-lounge-api-production-c038.up.railway.app/api/leaderboard';
+            const response = await fetch(apiUrl, { cache: 'no-store' });
+            if (!response.ok) throw new Error('Gagal mengambil data Discord');
+            PREVIEW_DATA = await response.json();
+            document.getElementById('total-members').textContent = formatXp(PREVIEW_DATA.totalMembers || PREVIEW_DATA.members.length);
+            renderPodium();
+            renderLeaderboard();
+        };
+        document.querySelectorAll('.filter').forEach((button) => button.addEventListener('click', () => { document.querySelector('.filter.active').classList.remove('active'); button.classList.add('active'); renderLeaderboard(button.dataset.filter); }));
+        document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => {
+            document.querySelector('.nav-item.active').classList.remove('active');
+            button.classList.add('active');
+            selectedRole = button.dataset.roleFilter || null;
+            document.getElementById('member-title-heading').textContent = selectedRole ? 'Bio' : 'Level';
+            document.getElementById('spending-heading').textContent = selectedRole ? 'Spending' : 'Total XP';
+            document.getElementById('progress-title-heading').textContent = selectedRole === 'SPENDING' ? 'Role' : 'Progress level';
+            document.getElementById('leaderboard-title').textContent = selectedRole === 'SPENDING' ? 'Top Whell & Levia' : selectedRole ? `Top ${selectedRole === 'WHELL' ? 'Whell' : 'Levia'}` : 'Leaderboard keaktifan';
+            document.getElementById('leaderboard-subtitle').textContent = selectedRole === 'SPENDING' ? 'Peringkat berdasarkan total spending' : selectedRole ? `Member dengan role ${selectedRole}` : 'Peringkat berdasarkan aktivitas chat dan voice';
+            renderPodium();
+            renderLeaderboard(document.querySelector('.filter.active').dataset.filter);
+            document.getElementById('leaderboard').scrollIntoView({ behavior: 'smooth' });
+        }));
+        document.querySelector('[data-scroll="leaderboard"]').addEventListener('click', () => document.getElementById('leaderboard').scrollIntoView({ behavior: 'smooth' }));
+        loadLeaderboard().catch((error) => {
+            console.error(error);
+            document.getElementById('leaderboard-body').innerHTML = `<tr><td colspan="5">Data Discord belum tersedia: ${error.message}</td></tr>`;
+        });
+    </script>
+</body>
+
+</html>
