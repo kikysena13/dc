@@ -106,30 +106,47 @@ function parseAmountInput(value) {
 	const trimmed = String(value || "").trim();
 	if (!trimmed) return null;
 
-	let normalized = trimmed.replace(/[^0-9,\.\-]/g, "");
-	if (!normalized) return null;
+	const normalized = trimmed.replace(/[^0-9,\.\-]/g, "");
+	if (!normalized || normalized === "-") return null;
 
 	if (normalized.includes(",") && normalized.includes(".")) {
 		if (normalized.lastIndexOf(",") > normalized.lastIndexOf(".")) {
-			normalized = normalized.replace(/\./g, "").replace(",", ".");
-		} else {
-			normalized = normalized.replace(/,/g, "");
+			return Number(normalized.replace(/\./g, "").replace(",", "."));
 		}
-	} else if (normalized.includes(",")) {
+		return Number(normalized.replace(/,/g, ""));
+	}
+
+	if (normalized.includes(",")) {
 		const parts = normalized.split(",");
-		if (parts.length > 2) {
-			normalized = parts.join("");
-		} else if (parts[1] && parts[1].length === 3) {
-			normalized = parts.join("");
-		} else {
-			normalized = `${parts[0]}.${parts[1] || "0"}`;
+		if (parts.length === 2) {
+			if (parts[1].length <= 2) {
+				return Number(`${parts[0]}.${parts[1]}`);
+			}
+			return Number(parts.join(""));
 		}
-	} else if (normalized.includes(".")) {
-		const parts = normalized.split(".");
 		if (parts.length > 2) {
-			normalized = parts.join("");
-		} else if (parts[1] && parts[1].length === 3) {
-			normalized = parts.join("");
+			const lastPart = parts[parts.length - 1];
+			if (lastPart.length <= 2) {
+				return Number(`${parts.slice(0, -1).join("")}.${lastPart}`);
+			}
+			return Number(parts.join(""));
+		}
+	}
+
+	if (normalized.includes(".")) {
+		const parts = normalized.split(".");
+		if (parts.length === 2) {
+			if (parts[1].length <= 2) {
+				return Number(normalized);
+			}
+			return Number(parts.join(""));
+		}
+		if (parts.length > 2) {
+			const lastPart = parts[parts.length - 1];
+			if (lastPart.length <= 2) {
+				return Number(`${parts.slice(0, -1).join("")}.${lastPart}`);
+			}
+			return Number(parts.join(""));
 		}
 	}
 
@@ -138,7 +155,11 @@ function parseAmountInput(value) {
 }
 
 function formatSpending(value, currency = "$") {
-	return currency === "RP" ? `Rp ${formatRp(value)}` : `$${formatRp(value)}`;
+	if (currency === "RP") {
+		return `Rp ${formatRp(value)}`;
+	}
+
+	return `$${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}`;
 }
 
 function getHelpMessage() {
