@@ -870,10 +870,7 @@
             position: relative;
             transition: transform .2s ease, box-shadow .2s ease;
             overflow: hidden;
-            background-image: linear-gradient(90deg, rgba(17, 15, 14, .94), rgba(17, 15, 14, .68), rgba(17, 15, 14, .8)), var(--profile-background, none);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background-color: rgba(17, 15, 14, .72);
         }
         tbody tr.profile-theme td:first-child { border-left: 2px solid transparent; }
         tbody tr.profile-theme td {
@@ -885,29 +882,38 @@
         }
         tbody tr.theme-exclusive {
             background-color: rgba(255, 196, 76, .08);
-            background-image: linear-gradient(100deg, rgba(255, 196, 76, .18), rgba(217, 91, 255, .12), rgba(68, 218, 255, .16), rgba(255, 111, 133, .14)), var(--profile-background, none);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
             box-shadow: inset 0 0 24px rgba(255, 204, 92, .12), 0 0 14px rgba(255, 192, 72, .14);
         }
         tbody tr.theme-exclusive td:first-child { border-left-color: #f2c45f; }
         tbody tr.theme-custom {
             background-color: rgba(17, 15, 14, .72);
-            background-image: linear-gradient(90deg, rgba(17, 15, 14, .94), rgba(17, 15, 14, .68), rgba(17, 15, 14, .8)), var(--profile-background, none);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
             box-shadow: inset 0 0 0 1px rgba(227, 165, 95, .7), inset 0 0 22px rgba(0, 0, 0, .5), 0 0 12px rgba(227, 165, 95, .14);
         }
         tbody tr.theme-custom td:first-child { border-left-color: var(--cyan); }
         tbody tr.theme-silver {
             background-color: rgba(196, 200, 214, .06);
-            background-image: linear-gradient(90deg, rgba(196, 200, 214, .12), rgba(156, 167, 184, .18), rgba(198, 205, 218, .1)), var(--profile-background, none);
+            box-shadow: inset 0 0 0 1px rgba(213, 220, 230, .28), inset 0 0 18px rgba(194, 205, 221, .1), 0 0 10px rgba(208, 218, 232, .1);
+        }
+
+        .member-cell {
+            position: relative;
+            overflow: hidden;
+            border-top: 0;
+            border-bottom: 0;
+            background-color: rgba(17, 15, 14, .2);
+        }
+
+        .member-cell.profile-theme-cell {
+            background-image: linear-gradient(90deg, rgba(17, 15, 14, .85), rgba(17, 15, 14, .58), rgba(17, 15, 14, .82)), var(--profile-background, none);
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            box-shadow: inset 0 0 0 1px rgba(213, 220, 230, .28), inset 0 0 18px rgba(194, 205, 221, .1), 0 0 10px rgba(208, 218, 232, .1);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04);
+        }
+
+        .member-cell.profile-theme-cell .member {
+            position: relative;
+            z-index: 1;
         }
         tbody tr.theme-silver td:first-child { border-left-color: #cbd4df; }
 
@@ -1154,7 +1160,7 @@
                 const roleLabel = spendingRole === 'WHELL' ? 'WHELL' : spendingRole === 'LEVIA' ? 'LEVIA' : '';
                 const finalTitle = selectedRole === 'SPENDING' ? roleLabel : title;
                 const progressCell = selectedRole ? `<span class="level">${escapeHtml(finalTitle)}</span>` : `<div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${member.progress}% menuju level berikutnya</span></div>`;
-                return `<tr class="${themeClass.trim()}"${themeStyle}><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td><div class="member"><img class="avatar" src="${escapeHtml(member.avatar)}" alt="Avatar ${escapeHtml(member.username)}"><div><strong>${escapeHtml(member.username)}</strong><span>ID ${escapeHtml(member.id)}</span></div></div></td><td>${escapeHtml(title)}</td><td class="xp">${value}</td><td>${progressCell}</td></tr>`;
+                return `<tr class="${themeClass.trim()}"><td class="rank ${index < 3 ? 'top' : ''}">${String(index + 1).padStart(2, '0')}</td><td class="member-cell${theme ? ' profile-theme-cell' : ''}"${themeStyle}><div class="member"><img class="avatar" src="${escapeHtml(member.avatar)}" alt="Avatar ${escapeHtml(member.username)}"><div><strong>${escapeHtml(member.username)}</strong><span>ID ${escapeHtml(member.id)}</span></div></div></td><td>${escapeHtml(title)}</td><td class="xp">${value}</td><td>${progressCell}</td></tr>`;
             }).join('');
         };
         const renderPodium = () => {
