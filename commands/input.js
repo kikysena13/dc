@@ -2,6 +2,23 @@ const { setProfileBackground, setProfileBio, getPoints, getRoleSpending } = requ
 
 const URL_PATTERN = /^https?:\/\/\S+$/i;
 
+function extractBackgroundUrl(input) {
+    if (!input) return null;
+
+    const trimmed = input.trim();
+    const markdownMatch = trimmed.match(/^\[[^\]]+\]\((https?:\/\/[^\s)]+)\)$/i);
+    if (markdownMatch) {
+        return markdownMatch[1];
+    }
+
+    const rawMatch = trimmed.match(/^https?:\/\/\S+$/i);
+    if (rawMatch) {
+        return trimmed;
+    }
+
+    return null;
+}
+
 async function handleInputCommand(message) {
     const parts = message.content.trim().split(/\s+/);
     const command = parts[0]?.toLowerCase();
@@ -28,7 +45,7 @@ async function handleInputCommand(message) {
         return true;
     }
 
-    const backgroundUrl = parts[1];
+    const backgroundUrl = extractBackgroundUrl(parts.slice(1).join(" "));
     if (!backgroundUrl || !URL_PATTERN.test(backgroundUrl)) {
         await message.reply("Gunakan: `!addinput https://domain.com/gambar-atau-gif`.");
         return true;
