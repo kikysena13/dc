@@ -33,11 +33,28 @@ function getPoints() {
 	return readPoints();
 }
 
+function normalizeBackgroundUrl(backgroundUrl) {
+	if (!backgroundUrl) return "";
+
+	const trimmed = backgroundUrl.trim();
+	if (/^https?:\/\/media\.tenor\.com\//i.test(trimmed)) {
+		return trimmed;
+	}
+
+	const tenorMatch = trimmed.match(/^https?:\/\/tenor\.com\/(?:view\/)?([^/?#]+)(?:\.[^/?#]+)?(?:[?#].*)?$/i);
+	if (tenorMatch) {
+		const assetId = tenorMatch[1].replace(/\.(gif|png|jpg|jpeg|webp)$/i, "");
+		return `https://media.tenor.com/${assetId}.gif`;
+	}
+
+	return trimmed;
+}
+
 function setProfileBackground(userId, username, backgroundUrl) {
 	const points = readPoints();
 	const memberPoints = points[userId] || { username, whellRp: 0, leviaRp: 0 };
 	memberPoints.username = username;
-	memberPoints.profileBackground = backgroundUrl;
+	memberPoints.profileBackground = normalizeBackgroundUrl(backgroundUrl);
 	points[userId] = memberPoints;
 	writePoints(points);
 }
@@ -65,7 +82,7 @@ function getRoleSpending(points, roles, preferredRole = null) {
 	let tier = "silver";
 	if (normalizedAmount >= THEME_THRESHOLDS.exclusive) tier = "exclusive";
 	else if (normalizedAmount >= THEME_THRESHOLDS.custom) tier = "custom";
-	return { role: normalizeRole(role), amount, normalizedAmount, currency, tier, background: points.profileBackground || "" };
+	return { role: normalizeRole(role), amount, normalizedAmount, currency, tier, background: normalizeBackgroundUrl(points.profileBackground) };
 }
 
 function normalizeRole(value) {

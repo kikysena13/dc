@@ -876,6 +876,10 @@
             position: relative;
             z-index: 1;
             background: transparent;
+            background-image: linear-gradient(90deg, rgba(17, 15, 14, .94), rgba(17, 15, 14, .68), rgba(17, 15, 14, .8)), var(--profile-background, none);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             border-top: 0;
             border-bottom: 0;
         }
@@ -1129,9 +1133,15 @@
                 const activityLabel = filter === 'chat' ? 'pesan' : filter === 'voice' ? 'menit' : 'poin';
                 const value = selectedRole ? `${member[(selectedRole === 'WHELL' || spendingRole === 'WHELL') ? 'whellCurrency' : 'leviaCurrency'] === 'RP' ? 'Rp ' : '$'}${formatXp(xp)}` : `${formatXp(xp)} <small>${activityLabel}</small>`;
                 const title = selectedRole ? member.bio || 'Belum ada bio' : `LVL ${member.level}`;
-                const theme = selectedRole === 'WHELL' || (selectedRole === 'SPENDING' && spendingRole === 'WHELL') ? member.whellTheme : selectedRole === 'LEVIA' || (selectedRole === 'SPENDING' && spendingRole === 'LEVIA') ? member.leviaTheme : null;
+                const theme = selectedRole === 'WHELL'
+                    ? member.whellTheme
+                    : selectedRole === 'LEVIA'
+                        ? member.leviaTheme
+                        : selectedRole === 'SPENDING'
+                            ? (spendingRole === 'WHELL' ? member.whellTheme : member.leviaTheme)
+                            : (member.whellTheme || member.leviaTheme || null);
                 const themeClass = theme ? ` profile-theme theme-${theme.tier}` : '';
-                const themeStyle = theme?.background ? ` style="background-image:linear-gradient(90deg,rgba(17,15,14,.94),rgba(17,15,14,.68),rgba(17,15,14,.8)),url('${escapeHtml(theme.background).replace(/'/g, '%27')}')"` : '';
+                const themeStyle = theme?.background ? ` style="--profile-background:url('${escapeHtml(theme.background).replace(/'/g, '%27')}')"` : '';
                 const roleLabel = spendingRole === 'WHELL' ? 'WHELL' : spendingRole === 'LEVIA' ? 'LEVIA' : '';
                 const finalTitle = selectedRole === 'SPENDING' ? roleLabel : title;
                 const progressCell = selectedRole ? `<span class="level">${escapeHtml(finalTitle)}</span>` : `<div class="xp-progress"><div class="progress"><i style="width:${member.progress}%"></i></div><span>${member.progress}% menuju level berikutnya</span></div>`;
