@@ -5,6 +5,7 @@
     "leviaRp": 23129000,
     "leviaCurrency": "RP",
     "role": "LEVIA",
+    "bio": "hidup sesimple ini lu yg bikin rumit sendiri",
     "profileBackground": "https://i.pinimg.com/originals/00/a2/0a/00a20a67bc0bdbdb698ed0ee7a1cd5db.gif",
     "profileBackgroundPosition": "center-right"
   },
@@ -14,6 +15,7 @@
     "leviaRp": 0,
     "whellCurrency": "$",
     "role": "WHELL",
+    "bio": "baik boleh munafik jangan",
     "profileBackground": "https://media.tenor.com/s3PhCO9YgvkAAAAd/tenor.gif",
     "profileBackgroundPosition": "center"
   },
