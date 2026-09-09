@@ -102,6 +102,41 @@ function formatRp(value) {
 	return new Intl.NumberFormat("id-ID").format(value);
 }
 
+function parseAmountInput(value) {
+	const trimmed = String(value || "").trim();
+	if (!trimmed) return null;
+
+	let normalized = trimmed.replace(/[^0-9,\.\-]/g, "");
+	if (!normalized) return null;
+
+	if (normalized.includes(",") && normalized.includes(".")) {
+		if (normalized.lastIndexOf(",") > normalized.lastIndexOf(".")) {
+			normalized = normalized.replace(/\./g, "").replace(",", ".");
+		} else {
+			normalized = normalized.replace(/,/g, "");
+		}
+	} else if (normalized.includes(",")) {
+		const parts = normalized.split(",");
+		if (parts.length > 2) {
+			normalized = parts.join("");
+		} else if (parts[1] && parts[1].length === 3) {
+			normalized = parts.join("");
+		} else {
+			normalized = `${parts[0]}.${parts[1] || "0"}`;
+		}
+	} else if (normalized.includes(".")) {
+		const parts = normalized.split(".");
+		if (parts.length > 2) {
+			normalized = parts.join("");
+		} else if (parts[1] && parts[1].length === 3) {
+			normalized = parts.join("");
+		}
+	}
+
+	const parsed = Number(normalized);
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
 function formatSpending(value, currency = "$") {
 	return currency === "RP" ? `Rp ${formatRp(value)}` : `$${formatRp(value)}`;
 }
@@ -169,12 +204,18 @@ async function handleWhellLeviCommand(message) {
 
 	const argumentStart = action === "reset" ? 3 : 3;
 	const amountInput = parts[argumentStart] || "";
-	const possibleCurrency = normalizeRole(parts[argumentStart + 1]);
-	const currency = CURRENCY_NAMES.has(possibleCurrency)
-		? possibleCurrency
-		: amountInput.trim().startsWith("$") ? "$" : "$";
-	const roleIndex = CURRENCY_NAMES.has(possibleCurrency) ? argumentStart + 2 : argumentStart + 1;
-	const roleName = normalizeRole(parts[action === "reset" ? 3 : roleIndex]);
+	let amountTokenIndex = argumentStart;
+	let currencyToken = normalizeRole(parts[argumentStart + 1]);
+	let roleIndex = argumentStart + 1;
+
+	if (currencyToken && ["RP", "$", "DOLLAR", "USD"].includes(currencyToken)) {
+		roleIndex = argumentStart + 2;
+		currencyToken = currencyToken === "DOLLAR" || currencyToken === "USD" ? "$" : currencyToken;
+	} else {
+		currencyToken = amountInput.trim().startsWith("$") ? "$" : "$";
+	}
+
+	const roleName = normalizeRole(parts[roleIndex]);
 	const pointsKey = ROLE_NAMES[roleName];
 	if (!target || !pointsKey) {
 		await message.reply(getHelpMessage());
@@ -185,15 +226,15 @@ async function handleWhellLeviCommand(message) {
 	const memberPoints = points[target.id] || { username: target.user.username, whellRp: 0, leviaRp: 0 };
 	if (action === "reset") {
 		memberPoints[pointsKey] = 0;
-		memberPoints[`${roleName === "WHELL" ? "whell" : "levia"}Currency`] = currency;
+		memberPoints[`${roleName === "WHELL" ? "whell" : "levia"}Currency`] = currencyToken;
 	} else {
-		const amount = Number(amountInput.replace(/[^0-9]/g, ""));
-		if (!Number.isSafeInteger(amount) || amount < 0) {
+		const amount = parseAmountInput(amountInput);
+		if (amount === null || amount < 0 || !Number.isFinite(amount)) {
 			await message.reply("Nominal spending harus berupa angka bulat positif.");
 			return true;
 		}
 		memberPoints[pointsKey] = action === "add" ? (memberPoints[pointsKey] || 0) + amount : amount;
-		memberPoints[`${roleName === "WHELL" ? "whell" : "levia"}Currency`] = currency;
+		memberPoints[`${roleName === "WHELL" ? "whell" : "levia"}Currency`] = currencyToken;
 	}
 
 	memberPoints.role = roleName;
