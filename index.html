@@ -998,8 +998,8 @@
         .brand { padding: 0 10px 32px; }
         .sidebar-close { display: none; }
         .nav-label { display: block; }
-        nav { display: grid; justify-content: stretch; gap: 5px; }
-        .nav-item { width: auto; justify-content: flex-start; padding: 12px; }
+        nav { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 5px; width: 100%; }
+        .nav-item { display: flex; width: 100%; justify-content: flex-start; padding: 12px; }
         .nav-icon { display: inline; }
         .sidebar-bottom { display: block; margin-top: auto; padding: 18px 10px 0; border-top: 1px solid var(--line); }
         .main { margin: 0 0 0 248px; width: calc(100% - 248px); }
@@ -1010,7 +1010,8 @@
             .sidebar { width: 248px; padding: 28px 18px; align-items: stretch; }
             .brand { padding: 0 10px 32px; }
             .brand-copy, .nav-label, .nav-item span:not(.nav-icon), .sidebar-bottom { display: block; }
-            .nav-item { width: auto; justify-content: flex-start; padding: 12px; }
+            nav { display: flex; flex-direction: column; align-items: stretch; gap: 5px; width: 100%; overflow: visible; }
+            .nav-item { display: flex; width: 100%; justify-content: flex-start; padding: 12px; }
             .nav-icon { display: inline; }
             .main { margin-left: 248px; width: calc(100% - 248px); padding: 0 22px 40px; }
         }
