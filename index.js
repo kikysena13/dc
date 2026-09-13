@@ -160,7 +160,7 @@ function getDashboardMembers() {
 }
 
 function getArenaData() {
-    const arenaFile = path.join(__dirname, "dataarena.json");
+    const arenaFile = path.join(__dirname, "data", "dataarena.json");
     const arenaData = JSON.parse(fs.readFileSync(arenaFile, "utf8"));
     const configuredGuildId = process.env.DISCORD_GUILD_ID;
     const guild = configuredGuildId
