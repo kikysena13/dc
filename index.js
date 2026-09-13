@@ -232,7 +232,7 @@ function startDashboardServer() {
             return;
         }
 
-        if (requestPath === "/dataarena.json") {
+        if (requestPath === "/dataarena.json" || requestPath === "/data/dataarena.json") {
             try {
                 const arenaData = getArenaData();
                 response.writeHead(200, {

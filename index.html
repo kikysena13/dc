@@ -1878,7 +1878,7 @@
         };
         const loadArena = async () => {
             const [arenaResponse, membersResponse] = await Promise.all([
-                fetch('/dataarena.json', { cache: 'no-store' }),
+                fetch('data/dataarena.json', { cache: 'no-store' }),
                 fetch('https://midnight-lounge-api-production-c038.up.railway.app/api/leaderboard', { cache: 'no-store' })
             ]);
             if (!arenaResponse.ok) throw new Error('Gagal mengambil data arena');
