@@ -159,6 +159,52 @@ function getDashboardMembers() {
 
 }
 
+function getArenaData() {
+    const arenaFile = path.join(__dirname, "dataarena.json");
+    const arenaData = JSON.parse(fs.readFileSync(arenaFile, "utf8"));
+    const configuredGuildId = process.env.DISCORD_GUILD_ID;
+    const guild = configuredGuildId
+        ? client.guilds.cache.get(configuredGuildId)
+        : client.guilds.cache.first();
+
+    if (!guild) return arenaData;
+
+    const findMember = (player) => {
+        if (!player || typeof player !== "object") return null;
+        if (player.discordId) return guild.members.cache.get(String(player.discordId)) || null;
+
+        const searchName = String(player.name || "").trim().toLowerCase();
+        if (!searchName || searchName === "menunggu") return null;
+        return guild.members.cache.find((member) => [
+            member.user.username,
+            member.displayName,
+            member.user.globalName
+        ].filter(Boolean).some((name) => name.toLowerCase() === searchName)) || null;
+    };
+
+    const enrichPlayer = (player) => {
+        if (!player || typeof player !== "object") return player;
+        const member = findMember(player);
+        if (!member) return player;
+        return {
+            ...player,
+            name: player.name || member.displayName,
+            avatar: member.user.displayAvatarURL({ dynamic: false, size: 96 })
+        };
+    };
+
+    arenaData.rounds = (arenaData.rounds || []).map((round) => ({
+        ...round,
+        matches: (round.matches || []).map((match) => ({
+            ...match,
+            player1: enrichPlayer(match.player1),
+            player2: enrichPlayer(match.player2)
+        }))
+    }));
+    arenaData.winner = enrichPlayer(arenaData.winner);
+    return arenaData;
+}
+
 function startDashboardServer() {
     const dashboardFile = path.join(__dirname, "index.html");
     const server = http.createServer((request, response) => {
@@ -182,6 +228,22 @@ function startDashboardServer() {
             } catch (error) {
                 response.writeHead(503, { "Content-Type": "application/json; charset=utf-8" });
                 response.end(JSON.stringify({ error: error.message }));
+            }
+            return;
+        }
+
+        if (requestPath === "/dataarena.json") {
+            try {
+                const arenaData = getArenaData();
+                response.writeHead(200, {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Cache-Control": "no-store",
+                    "Access-Control-Allow-Origin": "*"
+                });
+                response.end(JSON.stringify(arenaData));
+            } catch (error) {
+                response.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
+                response.end(JSON.stringify({ error: "Data arena tidak ditemukan." }));
             }
             return;
         }
