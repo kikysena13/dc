@@ -7,7 +7,7 @@ function getWebsiteUrl() {
 function createWebsiteEmbed() {
 	return new Discord.MessageEmbed()
 		.setColor("#45d9d0")
-		.setTitle("Good Time Game Leaderboard")
+		.setTitle("Midnight Lounge Leaderboard")
 		.setDescription(
 			"Lihat peringkat keaktifan member, statistik XP, aktivitas chat, dan aktivitas voice di dashboard komunitas Good Time Game."
 		)
@@ -21,7 +21,7 @@ function createWebsiteEmbed() {
 				value: "Website bersifat view-only dan tidak mengubah data Discord."
 			}
 		)
-		.setFooter({ text: "Good Time Game • Pantau kontribusimu" })
+		.setFooter({ text: "Midnight Lounge • Pantau kontribusimu" })
 		.setTimestamp();
 }
 
