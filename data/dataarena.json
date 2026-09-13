@@ -2,28 +2,28 @@
   "title": "Midnight Arena",
   "subtitle": "Turnamen komunitas Midnight Lounge",
   "status": "TURNAMEN AKTIF",
-  "winner": { "name": "Edo" },
+  "winner": { "name": "-" },
   "rounds": [
     {
       "name": "Perempat Final",
       "matches": [
-        { "player1": { "name": "Light", "discordId": "1437384067111714836", "score": 3 }, "player2": { "name": "nv", "score": 1 }, "winner": 1 },
-        { "player1": { "name": "Edo", "score": 1 }, "player2": { "name": "adestian", "score": 3 }, "winner": 2 },
-        { "player1": { "name": "Persia", "score": 3 }, "player2": { "name": "Mika", "score": 0 }, "winner": 1 },
-        { "player1": { "name": "Raka", "score": 1 }, "player2": { "name": "Nara", "score": 3 }, "winner": 2 }
+        { "player1": { "name": "-", "score": 3 }, "player2": { "name": "-", "score": 1 }, "winner": 1 },
+        { "player1": { "name": "-", "score": 1 }, "player2": { "name": "-", "score": 3 }, "winner": 2 },
+        { "player1": { "name": "-", "score": 3 }, "player2": { "name": "-", "score": 0 }, "winner": 1 },
+        { "player1": { "name": "-", "score": 1 }, "player2": { "name": "- ", "score": 3 }, "winner": 2 }
       ]
     },
     {
       "name": "Semi Final",
       "matches": [
-        { "player1": { "name": "Light", "score": 0 }, "player2": { "name": "adestian", "score": 0 }, "winner": null },
-        { "player1": { "name": "Persia", "score": 0 }, "player2": { "name": "Nara", "score": 0 }, "winner": null }
+        { "player1": { "name": "-", "score": 0 }, "player2": { "name": "-", "score": 0 }, "winner": null },
+        { "player1": { "name": "-", "score": 0 }, "player2": { "name": "-", "score": 0 }, "winner": null }
       ]
     },
     {
       "name": "Final",
       "matches": [
-        { "player1": { "name": "Edo", "score": 0 }, "player2": { "name": "Light", "score": 0 }, "winner": null }
+        { "player1": { "name": "-", "score": 0 }, "player2": { "name": "-", "score": 0 }, "winner": null }
       ]
     }
   ]
