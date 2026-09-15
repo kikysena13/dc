@@ -1,8 +1,9 @@
 {
   "title": "Midnight Arena",
-  "subtitle": "Turnamen Skala Besar",
-  "status": "PENDAFTARAN",
+  "subtitle": "Tournament PGR",
+  "status": "Peserta",
   "winner": { "name": "-" },
+  "participants": [],
   "rounds": [
     {
       "name": "Round 1",

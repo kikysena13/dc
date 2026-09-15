@@ -160,6 +160,36 @@ function getDashboardMembers() {
 
 }
 
+function getArenaGuild() {
+    const configuredGuildId = process.env.DISCORD_GUILD_ID;
+    return configuredGuildId
+        ? client.guilds.cache.get(configuredGuildId)
+        : client.guilds.cache.first();
+}
+
+function syncArenaParticipants(guild) {
+    if (!guild) return;
+
+    const arenaFile = path.join(__dirname, "data", "dataarena.json");
+    const arenaData = JSON.parse(fs.readFileSync(arenaFile, "utf8"));
+    const participants = guild.members.cache
+        .filter(member => !member.user.bot && member.roles.cache.some(role => role.name.toLowerCase() === "punishing"))
+        .map(member => ({
+            discordId: member.id,
+            name: member.displayName,
+            username: member.user.username,
+            avatar: member.user.displayAvatarURL({ dynamic: false, size: 96 })
+        }))
+        .sort((first, second) => first.name.localeCompare(second.name));
+
+    const currentParticipants = JSON.stringify(arenaData.participants || []);
+    if (currentParticipants === JSON.stringify(participants)) return;
+
+    arenaData.participants = participants;
+    fs.writeFileSync(arenaFile, `${JSON.stringify(arenaData, null, 2)}\n`, "utf8");
+    console.log(`Arena participants synced: ${participants.length} member(s) with role PUNISHING.`);
+}
+
 function getArenaData() {
     const arenaFile = path.join(__dirname, "data", "dataarena.json");
     const arenaData = JSON.parse(fs.readFileSync(arenaFile, "utf8"));
@@ -440,6 +470,23 @@ client.on('messageCreate', async (message) => {
             message.reply("Failed to load the member list.").catch(error => console.error(error));
         }
     }
+});
+
+client.once("ready", async () => {
+    const guild = getArenaGuild();
+    if (!guild) return;
+
+    try {
+        await guild.members.fetch();
+        syncArenaParticipants(guild);
+    } catch (error) {
+        console.error("Failed to sync arena participants:", error);
+    }
+});
+
+client.on("guildMemberUpdate", (oldMember, newMember) => {
+    if (oldMember.roles.cache.equals(newMember.roles.cache)) return;
+    syncArenaParticipants(newMember.guild);
 });
 
 if (!token) {
