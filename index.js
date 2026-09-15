@@ -187,8 +187,50 @@ function syncArenaParticipants(guild) {
     if (currentParticipants === JSON.stringify(participants)) return;
 
     arenaData.participants = participants;
-    fs.writeFileSync(arenaFile, `${JSON.stringify(arenaData, null, 2)}\n`, "utf8");
+    const serializedArena = `${JSON.stringify(arenaData, null, 2)}\n`;
+    fs.writeFileSync(arenaFile, serializedArena, "utf8");
+    queueArenaGitHubPersistence(serializedArena);
     console.log(`Arena participants synced: ${participants.length} member(s) with role ${ARENA_PARTICIPANT_ROLE}.`);
+}
+
+let arenaGitHubSyncQueue = Promise.resolve();
+
+function queueArenaGitHubPersistence(serializedArena) {
+    if (!process.env.GITHUB_TOKEN) return;
+
+    arenaGitHubSyncQueue = arenaGitHubSyncQueue
+        .then(async () => {
+            const repository = process.env.GITHUB_REPOSITORY || "kikysena13/dc";
+            const branch = process.env.GITHUB_BRANCH || "main";
+            const filePath = process.env.GITHUB_ARENA_DATA_PATH || "data/dataarena.json";
+            const endpoint = `https://api.github.com/repos/${repository}/contents/${filePath}`;
+            const headers = {
+                Accept: "application/vnd.github+json",
+                Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+                "X-GitHub-Api-Version": "2022-11-28"
+            };
+
+            const currentResponse = await fetch(`${endpoint}?ref=${encodeURIComponent(branch)}`, { headers });
+            if (!currentResponse.ok) {
+                throw new Error(`GitHub arena read failed with ${currentResponse.status}: ${(await currentResponse.text()).slice(0, 240)}`);
+            }
+
+            const currentFile = await currentResponse.json();
+            const updateResponse = await fetch(endpoint, {
+                method: "PUT",
+                headers: { ...headers, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: "Sync arena participants from Discord",
+                    content: Buffer.from(serializedArena, "utf8").toString("base64"),
+                    branch,
+                    sha: currentFile.sha
+                })
+            });
+            if (!updateResponse.ok) {
+                throw new Error(`GitHub arena write failed with ${updateResponse.status}: ${(await updateResponse.text()).slice(0, 240)}`);
+            }
+        })
+        .catch(error => console.error("GitHub arena data sync failed:", error.message));
 }
 
 function getArenaData() {
