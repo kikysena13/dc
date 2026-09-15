@@ -1966,7 +1966,15 @@
             menuToggle.setAttribute('aria-expanded', 'false');
         });
         document.querySelector('[data-scroll="leaderboard"]').addEventListener('click', () => document.getElementById('leaderboard').scrollIntoView({ behavior: 'smooth' }));
-        loadLeaderboard().catch((error) => {
+        loadLeaderboard().then(() => {
+            const initialView = new URLSearchParams(window.location.search).get('view');
+            const initialButton = initialView === 'arena'
+                ? document.querySelector('[data-view="arena"]')
+                : initialView === 'spending'
+                    ? document.querySelector('[data-role-filter="SPENDING"]')
+                    : null;
+            if (initialButton) initialButton.click();
+        }).catch((error) => {
             console.error(error);
             document.getElementById('leaderboard-body').innerHTML = `<tr><td colspan="5">Data Discord belum tersedia: ${error.message}</td></tr>`;
         });
