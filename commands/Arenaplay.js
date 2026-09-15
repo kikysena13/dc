@@ -1,4 +1,7 @@
 const Discord = require("discord.js");
+const https = require("https");
+const { spawn } = require("child_process");
+const ffmpegPath = require("ffmpeg-static");
 const ARENA_EVENT_VIDEO = "https://assets.huaxu.app/spines/spinelogin/4-7/render/_default.vp9.webm";
 
 // Edit rules server di fungsi createRulesEmbed() di bawah.
@@ -53,8 +56,49 @@ function createArenaEventEmbed(eventDetails, author) {
         .setColor("#e74c3c")
         .setTitle("⚔️ ARENA EVENT DIMULAI")
         .setDescription(`Event arena resmi dimulai!\n\n${eventDetails}`)
+        .setImage("attachment://arena-event-banner.png")
         .setFooter({ text: `Event diumumkan oleh ${author.tag}` })
         .setTimestamp();
+}
+
+function createArenaEventBanner() {
+    return new Promise((resolve, reject) => {
+        const ffmpeg = spawn(ffmpegPath, [
+            "-i", "pipe:0",
+            "-frames:v", "1",
+            "-f", "image2",
+            "pipe:1"
+        ]);
+        const chunks = [];
+        let errorOutput = "";
+
+        ffmpeg.stdout.on("data", chunk => chunks.push(chunk));
+        ffmpeg.stderr.on("data", chunk => {
+            errorOutput += chunk.toString();
+        });
+        ffmpeg.stdin.on("error", () => {});
+        ffmpeg.on("error", reject);
+        ffmpeg.on("close", code => {
+            if (code === 0 && chunks.length > 0) {
+                resolve(Buffer.concat(chunks));
+            } else {
+                reject(new Error(`Failed to create arena banner: ${errorOutput}`));
+            }
+        });
+
+        https.get(ARENA_EVENT_VIDEO, response => {
+            if (response.statusCode !== 200) {
+                ffmpeg.kill();
+                reject(new Error(`Arena video returned HTTP ${response.statusCode}`));
+                return;
+            }
+
+            response.pipe(ffmpeg.stdin);
+        }).on("error", error => {
+            ffmpeg.kill();
+            reject(error);
+        });
+    });
 }
 
 async function handleArenaEventCommand(message) {
@@ -75,13 +119,17 @@ async function handleArenaEventCommand(message) {
         return true;
     }
 
-    await message.channel.send({
-        content: ARENA_EVENT_VIDEO
-    }).catch(error => console.error(error));
+    let banner;
+    try {
+        banner = await createArenaEventBanner();
+    } catch (error) {
+        console.error(error);
+    }
 
     await message.channel.send({
         content: "@everyone",
         embeds: [createArenaEventEmbed(eventDetails, message.author)],
+        files: banner ? [new Discord.MessageAttachment(banner, "arena-event-banner.png")] : [],
         allowedMentions: { parse: ["everyone"] }
     }).catch(error => console.error(error));
 
