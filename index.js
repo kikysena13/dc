@@ -57,6 +57,7 @@ const { handleWhellLeviCommand } = require("./commands/whellevi");
 const spendingPoints = require("./commands/whellevi");
 const { handleInputCommand } = require("./commands/input");
 const { getMemberActivity, recordChatMessage, recordVoiceStateChange } = require("./commands/activity");
+const ARENA_PARTICIPANT_ROLE = "Punishing";
 
 const processedMessageIds = new Map();
 const recentCommandSignatures = new Map();
@@ -173,7 +174,7 @@ function syncArenaParticipants(guild) {
     const arenaFile = path.join(__dirname, "data", "dataarena.json");
     const arenaData = JSON.parse(fs.readFileSync(arenaFile, "utf8"));
     const participants = guild.members.cache
-        .filter(member => !member.user.bot && member.roles.cache.some(role => role.name.toLowerCase() === "punishing"))
+        .filter(member => !member.user.bot && member.roles.cache.some(role => role.name.toLowerCase() === ARENA_PARTICIPANT_ROLE.toLowerCase()))
         .map(member => ({
             discordId: member.id,
             name: member.displayName,
@@ -187,7 +188,7 @@ function syncArenaParticipants(guild) {
 
     arenaData.participants = participants;
     fs.writeFileSync(arenaFile, `${JSON.stringify(arenaData, null, 2)}\n`, "utf8");
-    console.log(`Arena participants synced: ${participants.length} member(s) with role PUNISHING.`);
+    console.log(`Arena participants synced: ${participants.length} member(s) with role ${ARENA_PARTICIPANT_ROLE}.`);
 }
 
 function getArenaData() {
