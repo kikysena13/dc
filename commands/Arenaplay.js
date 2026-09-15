@@ -54,7 +54,7 @@ function createRulesHelpEmbed() {
 function createArenaEventEmbed(eventDetails, author) {
     return new Discord.MessageEmbed()
         .setColor("#e74c3c")
-        .setTitle("⚔️ ARENA EVENT DIMULAI")
+        .setTitle("ARENA EVENT DIMULAI")
         .setDescription(`Event arena resmi dimulai!\n\n${eventDetails}`)
         .setImage("attachment://arena-event-banner.gif")
         .setFooter({ text: `Event diumumkan oleh ${author.tag}` })
