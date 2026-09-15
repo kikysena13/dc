@@ -73,3 +73,18 @@ Kalau mau fokus ke bagian tengah kanan:
 !addinput https://.../gambar.gif crop=center-right
 Kalau mau fokus ke bagian tengah:
 !addinput https://.../gambar.gif crop=center
+
+
+!annoucnment isi pengumuman update → embed SERVER UPDATE
+!arenaannouncmne    t isi pengumuman arena → embed ARENA UPDATE
+
+!arenaevent annoucnmenet untuk arena dimulai
+
+Sudah ditambahkan:
+
+
+Membuka Top Whell & Levia.
+
+!spenderlb
+Membuka halaman Arena.
+!arenalb
