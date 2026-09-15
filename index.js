@@ -48,6 +48,7 @@ const { handleMusicCommand } = require("./commands/music");
 const { handleRandomCodeCommand } = require("./commands/buatcoderrandom");
 const { handlePlayMusicCommand } = require("./commands/playmusic");
 const { handleRulesCommand } = require("./commands/rules");
+const { handleArenaEventCommand } = require("./commands/Arenaplay");
 const { handleRoleInfoCommand } = require("./commands/Roleinfo");
 const { handleAnnouncementCommand } = require("./commands/announcment");
 const { handleTaskCommand } = require("./commands/tasks");
@@ -366,6 +367,7 @@ client.on('messageCreate', async (message) => {
     if (await handleRulesCommand(message)) return;
     if (await handleRoleInfoCommand(message)) return;
     if (await handleAnnouncementCommand(message)) return;
+    if (await handleArenaEventCommand(message)) return;
     if (await handleTaskCommand(message)) return;
     if (await handleWebCommand(message)) return;
     if (await handleWhellLeviCommand(message)) return;
