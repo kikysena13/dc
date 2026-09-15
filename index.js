@@ -168,12 +168,8 @@ function getArenaGuild() {
         : client.guilds.cache.first();
 }
 
-function syncArenaParticipants(guild) {
-    if (!guild) return;
-
-    const arenaFile = path.join(__dirname, "data", "dataarena.json");
-    const arenaData = JSON.parse(fs.readFileSync(arenaFile, "utf8"));
-    const participants = guild.members.cache
+function getArenaParticipants(guild) {
+    return guild.members.cache
         .filter(member => !member.user.bot && member.roles.cache.some(role => role.name.toLowerCase() === ARENA_PARTICIPANT_ROLE.toLowerCase()))
         .map(member => ({
             discordId: member.id,
@@ -182,15 +178,23 @@ function syncArenaParticipants(guild) {
             avatar: member.user.displayAvatarURL({ dynamic: false, size: 96 })
         }))
         .sort((first, second) => first.name.localeCompare(second.name));
+}
 
-    const currentParticipants = JSON.stringify(arenaData.participants || []);
-    if (currentParticipants === JSON.stringify(participants)) return;
+function syncArenaParticipants(guild, arenaData = null) {
+    if (!guild) return [];
 
-    arenaData.participants = participants;
-    const serializedArena = `${JSON.stringify(arenaData, null, 2)}\n`;
+    const arenaFile = path.join(__dirname, "data", "dataarena.json");
+    const currentArenaData = arenaData || JSON.parse(fs.readFileSync(arenaFile, "utf8"));
+    const participants = getArenaParticipants(guild);
+
+    if (JSON.stringify(currentArenaData.participants || []) === JSON.stringify(participants)) return participants;
+
+    currentArenaData.participants = participants;
+    const serializedArena = `${JSON.stringify(currentArenaData, null, 2)}\n`;
     fs.writeFileSync(arenaFile, serializedArena, "utf8");
     queueArenaGitHubPersistence(serializedArena);
     console.log(`Arena participants synced: ${participants.length} member(s) with role ${ARENA_PARTICIPANT_ROLE}.`);
+    return participants;
 }
 
 let arenaGitHubSyncQueue = Promise.resolve();
@@ -236,12 +240,11 @@ function queueArenaGitHubPersistence(serializedArena) {
 function getArenaData() {
     const arenaFile = path.join(__dirname, "data", "dataarena.json");
     const arenaData = JSON.parse(fs.readFileSync(arenaFile, "utf8"));
-    const configuredGuildId = process.env.DISCORD_GUILD_ID;
-    const guild = configuredGuildId
-        ? client.guilds.cache.get(configuredGuildId)
-        : client.guilds.cache.first();
+    const guild = getArenaGuild();
 
     if (!guild) return arenaData;
+
+    arenaData.participants = syncArenaParticipants(guild, arenaData);
 
     const findMember = (player) => {
         if (!player || typeof player !== "object") return null;
