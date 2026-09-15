@@ -1872,24 +1872,7 @@
             document.getElementById('arena-title').textContent = arenaData.title || 'Arena';
             document.getElementById('arena-subtitle').textContent = arenaData.subtitle || '';
             document.getElementById('arena-status').textContent = arenaData.status || 'AKTIF';
-            const participants = Array.isArray(arenaData.participants) ? arenaData.participants : [];
-            const rounds = (Array.isArray(arenaData.rounds) ? arenaData.rounds : []).map((round, roundIndex) => {
-                if (roundIndex !== 0 || !participants.length) return round;
-
-                let participantIndex = 0;
-                return {
-                    ...round,
-                    matches: (round.matches || []).map((match) => ({
-                        ...match,
-                        player1: match.player1?.name === '-' && participants[participantIndex]
-                            ? participants[participantIndex++]
-                            : match.player1,
-                        player2: match.player2?.name === '-' && participants[participantIndex]
-                            ? participants[participantIndex++]
-                            : match.player2
-                    }))
-                };
-            });
+            const rounds = Array.isArray(arenaData.rounds) ? arenaData.rounds : [];
             const winner = typeof arenaData.winner === 'string' ? { name: arenaData.winner } : (arenaData.winner || {});
             const winnerAvatar = winner.avatar || 'https://i.pravatar.cc/96?img=8';
             document.getElementById('arena-bracket').innerHTML = rounds.length

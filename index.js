@@ -180,6 +180,39 @@ function getArenaParticipants(guild) {
         .sort((first, second) => first.name.localeCompare(second.name));
 }
 
+function buildArenaRoundOne(arenaData, participants) {
+    const existingPlayers = new Map();
+    const currentRound = arenaData.rounds?.[0];
+
+    for (const match of currentRound?.matches || []) {
+        for (const player of [match.player1, match.player2]) {
+            if (player?.discordId) existingPlayers.set(String(player.discordId), player);
+        }
+    }
+
+    const matches = [];
+    for (let index = 0; index < participants.length; index += 2) {
+        const firstParticipant = participants[index];
+        const secondParticipant = participants[index + 1];
+        const firstPrevious = existingPlayers.get(firstParticipant.discordId) || {};
+        const secondPrevious = secondParticipant ? existingPlayers.get(secondParticipant.discordId) || {} : null;
+
+        matches.push({
+            player1: { ...firstParticipant, score: firstPrevious.score || 0 },
+            player2: secondParticipant
+                ? { ...secondParticipant, score: secondPrevious.score || 0 }
+                : { name: "Menunggu", score: 0 },
+            winner: null
+        });
+    }
+
+    return {
+        ...(currentRound || { name: "Round 1" }),
+        name: "Round 1",
+        matches
+    };
+}
+
 function syncArenaParticipants(guild, arenaData = null) {
     if (!guild) return [];
 
@@ -187,9 +220,19 @@ function syncArenaParticipants(guild, arenaData = null) {
     const currentArenaData = arenaData || JSON.parse(fs.readFileSync(arenaFile, "utf8"));
     const participants = getArenaParticipants(guild);
 
-    if (JSON.stringify(currentArenaData.participants || []) === JSON.stringify(participants)) return participants;
-
+    const previousState = JSON.stringify({
+        participants: currentArenaData.participants || [],
+        roundOne: currentArenaData.rounds?.[0]?.matches || []
+    });
     currentArenaData.participants = participants;
+    currentArenaData.rounds = currentArenaData.rounds || [];
+    currentArenaData.rounds[0] = buildArenaRoundOne(currentArenaData, participants);
+    const nextState = JSON.stringify({
+        participants,
+        roundOne: currentArenaData.rounds[0].matches
+    });
+    if (previousState === nextState) return participants;
+
     const serializedArena = `${JSON.stringify(currentArenaData, null, 2)}\n`;
     fs.writeFileSync(arenaFile, serializedArena, "utf8");
     queueArenaGitHubPersistence(serializedArena);
