@@ -56,7 +56,7 @@ function createArenaEventEmbed(eventDetails, author) {
         .setColor("#e74c3c")
         .setTitle("⚔️ ARENA EVENT DIMULAI")
         .setDescription(`Event arena resmi dimulai!\n\n${eventDetails}`)
-        .setImage("attachment://arena-event-banner.png")
+        .setImage("attachment://arena-event-banner.gif")
         .setFooter({ text: `Event diumumkan oleh ${author.tag}` })
         .setTimestamp();
 }
@@ -65,8 +65,10 @@ function createArenaEventBanner() {
     return new Promise((resolve, reject) => {
         const ffmpeg = spawn(ffmpegPath, [
             "-i", "pipe:0",
-            "-frames:v", "1",
-            "-f", "image2",
+            "-t", "6",
+            "-vf", "fps=10,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse",
+            "-loop", "0",
+            "-f", "gif",
             "pipe:1"
         ]);
         const chunks = [];
@@ -129,7 +131,7 @@ async function handleArenaEventCommand(message) {
     await message.channel.send({
         content: "@everyone",
         embeds: [createArenaEventEmbed(eventDetails, message.author)],
-        files: banner ? [new Discord.MessageAttachment(banner, "arena-event-banner.png")] : [],
+        files: banner ? [new Discord.MessageAttachment(banner, "arena-event-banner.gif")] : [],
         allowedMentions: { parse: ["everyone"] }
     }).catch(error => console.error(error));
 
