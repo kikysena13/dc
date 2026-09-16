@@ -49,8 +49,9 @@
   "1505202685996044350": {
     "username": "taracin21",
     "whellRp": 0,
-    "leviaRp": 0,
+    "leviaRp": 60480000,
     "whellCurrency": "$",
-    "role": "WHELL"
+    "role": "LEVIA",
+    "leviaCurrency": "RP"
   }
 }
