@@ -55,6 +55,8 @@
     "leviaRp": 60480000,
     "whellCurrency": "$",
     "role": "LEVIA",
-    "leviaCurrency": "RP"
+    "leviaCurrency": "RP",
+    "profileBackground": "https://media1.tenor.com/m/bP3oW3305tIAAAAd/gojo-gojo-satoru.gif",
+    "profileBackgroundPosition": "center"
   }
 }
