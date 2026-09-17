@@ -44,7 +44,9 @@
     "whellRp": 54786550,
     "leviaRp": 0,
     "whellCurrency": "RP",
-    "role": "WHELL"
+    "role": "WHELL",
+    "profileBackground": "https://media1.tenor.com/m/iyPBWQwGAckAAAAd/selena-pgr.gif",
+    "profileBackgroundPosition": "center"
   },
   "1505202685996044350": {
     "username": "taracin21",
