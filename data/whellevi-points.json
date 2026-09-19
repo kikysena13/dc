@@ -63,8 +63,9 @@
   "1550524015184187392": {
     "username": "xarhanakarin",
     "whellRp": 0,
-    "leviaRp": 0,
+    "leviaRp": 97670900,
     "whellCurrency": "$",
-    "role": "WHELL"
+    "role": "LEVIA",
+    "leviaCurrency": "RP"
   }
 }
