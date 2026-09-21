@@ -1,5 +1,7 @@
+const { MessageEmbed } = require("discord.js");
+
 const MAX_PROMPT_LENGTH = 2000;
-const MAX_REPLY_LENGTH = 1900;
+const MAX_REPLY_LENGTH = 3900;
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 function isConfiguredKey(value) {
@@ -57,6 +59,21 @@ function splitReply(text) {
     return chunks;
 }
 
+function formatMathForDiscord(text) {
+    return text
+        .replace(/\$\$([\s\S]*?)\$\$/g, (_match, formula) => `\n\`\`\`\n${formula.trim()}\n\`\`\`\n`)
+        .replace(/\\\[([\s\S]*?)\\\]/g, (_match, formula) => `\n\`\`\`\n${formula.trim()}\n\`\`\`\n`)
+        .replace(/\\\(([\s\S]*?)\\\)/g, (_match, formula) => `\`${formula.trim()}\``)
+        .replace(/\$([^$\n]+)\$/g, (_match, formula) => `\`${formula.trim()}\``);
+}
+
+function createResponseEmbed(description) {
+    return new MessageEmbed()
+        .setColor("#5865F2")
+        .setTitle("🤖 Hermes AI")
+        .setDescription(description);
+}
+
 async function handleAIChatCommand(message, args) {
     const query = args.join(" ").trim();
     if (!query) {
@@ -74,12 +91,12 @@ async function handleAIChatCommand(message, args) {
 
     try {
         const prompt = query.slice(0, MAX_PROMPT_LENGTH);
-        const response = await requestGemini(config, prompt);
+        const response = formatMathForDiscord(await requestGemini(config, prompt));
 
         const chunks = splitReply(response);
-        await message.reply(`🤖 ${chunks.shift()}`);
+        await message.reply({ embeds: [createResponseEmbed(chunks.shift())] });
         for (const chunk of chunks) {
-            await message.channel.send(chunk);
+            await message.channel.send({ embeds: [createResponseEmbed(chunk)] });
         }
     } catch (error) {
         console.error("AI Chat Error:", error);
