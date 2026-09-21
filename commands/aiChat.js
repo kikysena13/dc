@@ -70,7 +70,7 @@ function formatMathForDiscord(text) {
 function createResponseEmbed(description) {
     return new MessageEmbed()
         .setColor("#5865F2")
-        .setTitle("🤖 Hermes AI")
+        .setTitle("Reysie-Chan")
         .setDescription(description);
 }
 
