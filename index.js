@@ -5,6 +5,7 @@ const http = require("http");
 const path = require("path");
 const Discord = require("discord.js");
 const { handleStudyScheduleCommand } = require("./commands/studySchedule");
+const { handleAIChatCommand } = require("./commands/aiChat");
 
 const LOCK_FILE = path.join(__dirname, ".bot.lock");
 
@@ -478,6 +479,11 @@ client.on('messageCreate', async (message) => {
     markMessageProcessed(message);
 
     recordChatMessage(message.author);
+
+    if (/^!ai(?:\s|$)/i.test(message.content.trim())) {
+        const args = message.content.trim().split(/\s+/).slice(1);
+        if (await handleAIChatCommand(message, args)) return;
+    }
 
     if (await handleStudyScheduleCommand(message)) return;
     if (await handleMusicCommand(message)) return;

@@ -1,39 +1,124 @@
-const { MessageEmbed } = require("discord.js");
+const MAX_PROMPT_LENGTH = 2000;
+const MAX_REPLY_LENGTH = 1900;
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 
-// Modul AI Chat sederhana untuk Discord (menggunakan API Key dari environment jika ada, atau fallback respons cerdas)
+function getAIConfig() {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const openAIKey = process.env.OPENAI_API_KEY;
+
+    if (geminiKey) {
+        return {
+            provider: "gemini",
+            apiKey: geminiKey,
+            model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL
+        };
+    }
+
+    if (openAIKey) {
+        return {
+            provider: "openai",
+            apiKey: openAIKey,
+            model: process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL
+        };
+    }
+
+    return null;
+}
+
+async function requestGemini(config, query) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`;
+    const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: query }] }]
+        })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error?.message || `Gemini API returned HTTP ${response.status}`);
+    }
+
+    const text = data.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text || "")
+        .join("")
+        .trim();
+
+    if (!text) {
+        throw new Error("Gemini API returned an empty response");
+    }
+
+    return text;
+}
+
+async function requestOpenAI(config, query) {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${config.apiKey}`
+        },
+        body: JSON.stringify({
+            model: config.model,
+            messages: [{ role: "user", content: query }]
+        })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error?.message || `OpenAI API returned HTTP ${response.status}`);
+    }
+
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if (!text) {
+        throw new Error("OpenAI API returned an empty response");
+    }
+
+    return text;
+}
+
+function splitReply(text) {
+    const chunks = [];
+    for (let index = 0; index < text.length; index += MAX_REPLY_LENGTH) {
+        chunks.push(text.slice(index, index + MAX_REPLY_LENGTH));
+    }
+    return chunks;
+}
+
 async function handleAIChatCommand(message, args) {
     const query = args.join(" ").trim();
     if (!query) {
-        return message.reply("Gunakan format: `!ai <pertanyaan atau obrolanmu>`");
+        await message.reply("Gunakan format: `!ai <pertanyaan atau obrolanmu>`");
+        return true;
     }
 
-    // Indikator bot sedang mengetik
+    const config = getAIConfig();
+    if (!config) {
+        await message.reply("AI belum aktif. Tambahkan `GEMINI_API_KEY` atau `OPENAI_API_KEY` di environment Railway.");
+        return true;
+    }
+
     await message.channel.sendTyping();
 
     try {
-        // Jika ada Google Gemini atau OpenAI API Key di environment, bisa dihubungkan ke sini.
-        // Sebagai implementasi aman tanpa merusak sistem lain, kita sediakan handler AI atau integrasi fleksibel.
-        const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
+        const prompt = query.slice(0, MAX_PROMPT_LENGTH);
+        const response = config.provider === "gemini"
+            ? await requestGemini(config, prompt)
+            : await requestOpenAI(config, prompt);
 
-        if (!apiKey) {
-            // Respons fallback interaktif jika API Key belum dipasang di .env
-            const embed = new MessageEmbed()
-                .setColor("#5865F2")
-                .setTitle("🤖 Hermes AI Assistant")
-                .setDescription(`Halo **${message.author.username}**! Kamu bilang: "${query}"\n\n*Catatan: Untuk mengaktifkan obrolan AI penuh secara real-time, silakan tambahkan ` + "`GEMINI_API_KEY`" + ` atau ` + "`OPENAI_API_KEY`" + ` di file `.env` kamu.*`)
-                .setFooter({ text: "Sistem bot utama tetap aman dan berjalan normal!" });
-
-            return message.reply({ embeds: [embed] });
+        const chunks = splitReply(response);
+        await message.reply(`🤖 ${chunks.shift()}`);
+        for (const chunk of chunks) {
+            await message.channel.send(chunk);
         }
-
-        // Jika API Key tersedia, di sini bisa disambungkan ke endpoint model LLM pilihan Kak Kiky.
-        // Untuk sekarang, kita kembalikan respons terstruktur agar bot siap diajak ngobrol.
-        return message.reply(`🤖 **AI Response:** Halo Kak Kiky! Saya mendengar pesanmu: "${query}". Sistem AI siap diaktifkan penuh.`);
-        
     } catch (error) {
         console.error("AI Chat Error:", error);
-        return message.reply("Maaf, terjadi kesalahan saat memproses obrolan AI.");
+        await message.reply("Maaf, AI sedang mengalami kendala. Periksa API key dan log Railway.");
     }
+
+    return true;
 }
 
 module.exports = { handleAIChatCommand };
