@@ -115,12 +115,6 @@
       "avatar": "https://cdn.discordapp.com/avatars/1550524015184187392/609ff0a43a6c1e5f3af6ff46b9353d19.webp?size=96"
     },
     {
-      "discordId": "1327293325342019604",
-      "name": "Keenann",
-      "username": "reyx8",
-      "avatar": "https://cdn.discordapp.com/avatars/1327293325342019604/3cdc117d2cfc5003181f45e9f610fd14.webp?size=96"
-    },
-    {
       "discordId": "1398996664433508392",
       "name": "kikan",
       "username": "kikanayaa",
@@ -137,6 +131,12 @@
       "name": "Laurel",
       "username": "ichi_laurel",
       "avatar": "https://cdn.discordapp.com/avatars/1158238796559700058/a02c0b2d760a0514ff2bd0a4613889a6.webp?size=96"
+    },
+    {
+      "discordId": "1327293325342019604",
+      "name": "LenoxsKav",
+      "username": "reyx8",
+      "avatar": "https://cdn.discordapp.com/avatars/1327293325342019604/d4b88f45dade14d19c8a4e4406eee810.webp?size=96"
     },
     {
       "discordId": "1321022196801474591",
@@ -412,34 +412,34 @@
         },
         {
           "player1": {
-            "discordId": "1327293325342019604",
-            "name": "Keenann",
-            "username": "reyx8",
-            "avatar": "https://cdn.discordapp.com/avatars/1327293325342019604/3cdc117d2cfc5003181f45e9f610fd14.webp?size=96",
-            "score": 0
-          },
-          "player2": {
             "discordId": "1398996664433508392",
             "name": "kikan",
             "username": "kikanayaa",
             "avatar": "https://cdn.discordapp.com/avatars/1398996664433508392/ded70015923cd0a6e77e586abcd887e5.webp?size=96",
             "score": 0
           },
-          "winner": null
-        },
-        {
-          "player1": {
+          "player2": {
             "discordId": "757534938386923530",
             "name": "Kiky",
             "username": "kikysena",
             "avatar": "https://cdn.discordapp.com/avatars/757534938386923530/5365e6732bc3e13d768bd1b8ac57a390.webp?size=96",
             "score": 35879976
           },
-          "player2": {
+          "winner": null
+        },
+        {
+          "player1": {
             "discordId": "1158238796559700058",
             "name": "Laurel",
             "username": "ichi_laurel",
             "avatar": "https://cdn.discordapp.com/avatars/1158238796559700058/a02c0b2d760a0514ff2bd0a4613889a6.webp?size=96",
+            "score": 0
+          },
+          "player2": {
+            "discordId": "1327293325342019604",
+            "name": "LenoxsKav",
+            "username": "reyx8",
+            "avatar": "https://cdn.discordapp.com/avatars/1327293325342019604/d4b88f45dade14d19c8a4e4406eee810.webp?size=96",
             "score": 0
           },
           "winner": null
