@@ -3,11 +3,17 @@ const MAX_REPLY_LENGTH = 1900;
 const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
 const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 
+function isConfiguredKey(value) {
+    return typeof value === "string"
+        && value.trim() !== ""
+        && !value.trim().toLowerCase().startsWith("isi_api_key_");
+}
+
 function getAIConfig() {
     const geminiKey = process.env.GEMINI_API_KEY;
     const openAIKey = process.env.OPENAI_API_KEY;
 
-    if (geminiKey) {
+    if (isConfiguredKey(geminiKey)) {
         return {
             provider: "gemini",
             apiKey: geminiKey,
@@ -15,7 +21,7 @@ function getAIConfig() {
         };
     }
 
-    if (openAIKey) {
+    if (isConfiguredKey(openAIKey)) {
         return {
             provider: "openai",
             apiKey: openAIKey,
