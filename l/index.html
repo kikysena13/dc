@@ -207,6 +207,36 @@
             font-size: 11px;
         }
 
+        .global-clock {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 13px;
+            color: var(--cyan);
+            background: rgba(69, 217, 208, .06);
+            border: 1px solid rgba(69, 217, 208, .2);
+            border-radius: 8px;
+            font-size: 11px;
+            font-family: 'Space Grotesk', monospace;
+            letter-spacing: .5px;
+            white-space: nowrap;
+        }
+
+        .clock-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 6px var(--cyan);
+            animation: clockPulse 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes clockPulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--cyan); }
+            50%       { opacity: .4; box-shadow: 0 0 2px var(--cyan); }
+        }
+
         .profile {
             display: flex;
             gap: 9px;
@@ -1002,6 +1032,11 @@
             <header class="topbar">
                 <div class="breadcrumb">Workspace / <b>Ringkasan</b></div>
                 <div class="top-actions"><span class="period">Musim aktif: Juni 2026</span>
+                    <div class="global-clock" aria-live="polite" aria-label="Jam global saat ini">
+                        <span class="clock-dot"></span>
+                        <span id="global-clock-time">00:00:00</span>
+                        <span style="opacity:.5;font-size:9px;letter-spacing:1px">UTC</span>
+                    </div>
                 </div>
             </header>
             <div class="content">
@@ -1202,6 +1237,18 @@
             console.error(error);
             document.getElementById('leaderboard-body').innerHTML = `<tr><td colspan="5">Data Discord belum tersedia: ${error.message}</td></tr>`;
         });
+
+        (function () {
+            const clockEl = document.getElementById('global-clock-time');
+            if (!clockEl) return;
+            const pad = (value) => String(value).padStart(2, '0');
+            const tick = () => {
+                const now = new Date();
+                clockEl.textContent = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}`;
+            };
+            tick();
+            setInterval(tick, 1000);
+        })();
     </script>
 </body>
 
