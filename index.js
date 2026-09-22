@@ -5,7 +5,7 @@ const http = require("http");
 const path = require("path");
 const Discord = require("discord.js");
 const { handleStudyScheduleCommand } = require("./commands/studySchedule");
-const { handleAIChatCommand } = require("./commands/aiChat");
+const { handleAIChatCommand, handleAIChatReply, handleAIMention } = require("./commands/aiChat");
 
 const LOCK_FILE = path.join(__dirname, ".bot.lock");
 
@@ -484,6 +484,10 @@ client.on('messageCreate', async (message) => {
         const args = message.content.trim().split(/\s+/).slice(1);
         if (await handleAIChatCommand(message, args)) return;
     }
+
+    // Balas pesan AI untuk melanjutkan percakapan dengan konteks sebelumnya.
+    if (await handleAIChatReply(message)) return;
+    if (await handleAIMention(message, client.user)) return;
 
     if (await handleStudyScheduleCommand(message)) return;
     if (await handleMusicCommand(message)) return;
