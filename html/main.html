@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b0f17">
+    <title>Midnight Lounge | Main</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <button class="sidebar-close" type="button" aria-label="Tutup navigasi">×</button>
+            <div class="brand">
+                <div class="brand-mark"><img src="https://i.pinimg.com/736x/5e/d0/00/5ed0007c7a50ad35d52a36fc204d1d55.jpg" alt="Midnight Lounge"></div>
+                <div class="brand-copy"><strong>Midnight Lounge</strong><span>Community dashboard</span></div>
+            </div>
+            <div class="nav-label">Workspace</div>
+            <nav aria-label="Navigasi utama">
+                <a class="nav-item" href="main.html"><span class="nav-icon">⌂</span><span>Main</span></a>
+                <a class="nav-item" href="leaderboard.html"><span class="nav-icon">♛</span><span>Leaderboard</span></a>
+                <a class="nav-item" href="top-spender.html"><span class="nav-icon">◉</span><span>Top Whell &amp; Levia</span></a>
+                <a class="nav-item" href="riwayat.html"><span class="nav-icon">◷</span><span>Riwayat Musim</span></a>
+                <a class="nav-item" href="arena.html"><span class="nav-icon">⚔</span><span>Arena</span></a>
+            </nav>
+        </aside>
+        <main class="main">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="menu-toggle" type="button" aria-label="Buka navigasi" aria-expanded="false">☰</button>
+                    <div class="breadcrumb">Workspace / <b>Main</b></div>
+                </div>
+                <div class="top-actions">
+                    <span class="period">Musim aktif: Juni 2026</span>
+                    <div class="global-clock" aria-live="polite" aria-label="Jam global saat ini">
+                        <span class="clock-dot"></span>
+                        <span id="global-clock-time">00:00:00</span>
+                        <span style="opacity:.5;font-size:9px;letter-spacing:1px">UTC</span>
+                    </div>
+                </div>
+            </header>
+            <div class="content">
+                <section class="hero">
+                    <div>
+                        <div class="eyebrow">Aktivitas komunitas</div>
+                        <h1>Selamat datang di Midnight Lounge</h1>
+                    </div>
+                </section>
+                <section class="stats" aria-label="Statistik server">
+                    <article class="stat-card">
+                        <div class="stat-head"><span>Total Member</span><span class="stat-icon">♙</span></div>
+                        <div class="stat-value" id="total-members">0</div>
+                        <div class="stat-foot"><span class="up">+12.4%</span> dari bulan lalu</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-head"><span>Member Aktif</span><span class="stat-icon">◉</span></div>
+                        <div class="stat-value">486</div>
+                        <div class="stat-foot"><span class="up">38.9%</span> dari total member</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-head"><span>Pesan Bulan Ini</span><span class="stat-icon">✦</span></div>
+                        <div class="stat-value">24,891</div>
+                        <div class="stat-foot"><span class="up">+8.7%</span> aktivitas chat</div>
+                    </article>
+                    <article class="stat-card">
+                        <div class="stat-head"><span>Aktivitas Voice</span><span class="stat-icon">◌</span></div>
+                        <div class="stat-value">1,840<span style="font-size:13px;color:var(--muted)"> jam</span></div>
+                        <div class="stat-foot"><span class="up">+16.2%</span> waktu voice</div>
+                    </article>
+                </section>
+                <section class="grid">
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h2 class="panel-title">Member teratas</h2>
+                                <p class="panel-subtitle">Kontributor paling aktif musim ini</p>
+                            </div>
+                            <a class="text-button" href="leaderboard.html">Lihat semua →</a>
+                        </div>
+                        <div class="podium" id="podium"></div>
+                    </article>
+                    <article class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <h2 class="panel-title">Musim berjalan</h2>
+                                <p class="panel-subtitle">Leaderboard bulanan</p>
+                            </div>
+                            <span class="live-pill" style="padding:6px 9px;font-size:10px">AKTIF</span>
+                        </div>
+                        <div class="reset-box">
+                            <div class="eyebrow">Reset berikutnya</div>
+                            <div class="reset-date">01 Juli 2026</div>
+                            <p>Leaderboard akan dimulai dari awal untuk musim baru.</p>
+                            <div class="progress"><i style="width:68%"></i></div>
+                            <div class="reset-meta"><span>18 hari tersisa</span><span>68% berjalan</span></div>
+                        </div>
+                    </article>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script src="../shared.js"></script>
+    <script>
+        initSidebar();
+        initClock();
+        if (PREVIEW_DATA && PREVIEW_DATA.members && PREVIEW_DATA.members.length > 0) {
+            const totalEl = document.getElementById('total-members');
+            if (totalEl) totalEl.textContent = formatXp(PREVIEW_DATA.totalMembers || PREVIEW_DATA.members.length);
+            renderPodium();
+        }
+        loadLeaderboard()
+            .then(() => renderPodium())
+            .catch((err) => console.error('Gagal memuat leaderboard:', err));
+    </script>
+</body>
+</html>

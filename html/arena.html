@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b0f17">
+    <title>Midnight Lounge | Arena</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <button class="sidebar-close" type="button" aria-label="Tutup navigasi">×</button>
+            <div class="brand">
+                <div class="brand-mark"><img src="https://i.pinimg.com/736x/5e/d0/00/5ed0007c7a50ad35d52a36fc204d1d55.jpg" alt="Midnight Lounge"></div>
+                <div class="brand-copy"><strong>Midnight Lounge</strong><span>Community dashboard</span></div>
+            </div>
+            <div class="nav-label">Workspace</div>
+            <nav aria-label="Navigasi utama">
+                <a class="nav-item" href="main.html"><span class="nav-icon">⌂</span><span>Main</span></a>
+                <a class="nav-item" href="leaderboard.html"><span class="nav-icon">♛</span><span>Leaderboard</span></a>
+                <a class="nav-item" href="top-spender.html"><span class="nav-icon">◉</span><span>Top Whell &amp; Levia</span></a>
+                <a class="nav-item" href="riwayat.html"><span class="nav-icon">◷</span><span>Riwayat Musim</span></a>
+                <a class="nav-item" href="arena.html"><span class="nav-icon">⚔</span><span>Arena</span></a>
+            </nav>
+        </aside>
+        <main class="main">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="menu-toggle" type="button" aria-label="Buka navigasi" aria-expanded="false">☰</button>
+                    <div class="breadcrumb">Workspace / <b>Arena</b></div>
+                </div>
+                <div class="top-actions">
+                    <span class="period">Musim aktif: Juni 2026</span>
+                    <div class="global-clock" aria-live="polite" aria-label="Jam global saat ini">
+                        <span class="clock-dot"></span>
+                        <span id="global-clock-time">00:00:00</span>
+                        <span style="opacity:.5;font-size:9px;letter-spacing:1px">UTC</span>
+                    </div>
+                </div>
+            </header>
+            <div class="content">
+                <section style="padding-top:30px">
+                    <div class="arena-heading">
+                        <div>
+                            <div class="eyebrow">Community tournament</div>
+                            <h1 id="arena-title">Midnight Arena</h1>
+                            <p class="arena-subtitle" id="arena-subtitle">Turnamen komunitas Midnight Lounge</p>
+                        </div>
+                        <div class="arena-status" id="arena-status">TURNAMEN AKTIF</div>
+                    </div>
+                    <div class="bracket-wrap">
+                        <div class="bracket" id="arena-bracket">
+                            <p style="color:var(--muted);padding:20px">Memuat bracket...</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script src="../shared.js"></script>
+    <script>
+        initSidebar();
+        initClock();
+        loadArena().catch((error) => {
+            document.getElementById('arena-bracket').innerHTML =
+                `<div class="bracket-error">${error.message}</div>`;
+        });
+    </script>
+</body>
+</html>

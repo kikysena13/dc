@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentor Terbaik 2026</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            background: #f5f5f5;
+            color: #111;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        /* HEADER */
+        .header {
+            background: #111;
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        /* STAT */
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+        }
+
+        .stat-title {
+            color: #777;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        /* MENTOR CARD */
+        .mentor-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .mentor {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 14px;
+            padding: 20px;
+            transition: 0.2s;
+        }
+
+        .mentor:hover {
+            border-color: #999;
+            transform: translateY(-2px);
+        }
+
+        .mentor-top {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .rank {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #111;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .avatar {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .mentor-info {
+            flex: 1;
+        }
+
+        .mentor-name {
+            font-size: 17px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .mentor-role {
+            font-size: 13px;
+            color: #777;
+        }
+
+        .vote-count {
+            text-align: right;
+            margin-right: 10px;
+        }
+
+        .vote-number {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .vote-label {
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* VOTE BUTTON */
+        .vote-btn {
+            border: 1px solid #111;
+            background: white;
+            color: #111;
+            padding: 9px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .vote-btn:hover {
+            background: #111;
+            color: white;
+        }
+
+        .vote-btn.voted {
+            background: #111;
+            color: white;
+        }
+
+        /* PROGRESS */
+        .progress-section {
+            margin-top: 18px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 7px;
+        }
+
+        .progress-bar {
+            height: 9px;
+            width: 100%;
+            background: #e5e5e5;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: #111;
+            border-radius: 20px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* MOBILE */
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px auto;
+                padding: 12px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .stats {
+                flex-direction: column;
+            }
+
+            .mentor {
+                padding: 15px;
+            }
+
+            .mentor-top {
+                flex-wrap: wrap;
+            }
+
+            .vote-count {
+                margin-left: auto;
+            }
+
+            .vote-btn {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>🏆 Mentor Terbaik 2026</h1>
+        <p>
+            Berikan vote kamu kepada mentor yang menurutmu paling terbaik.
+        </p>
+    </div>
+
+    <!-- STATISTIK -->
+    <div class="stats">
+
+        <div class="stat">
+            <div class="stat-title">Total Vote</div>
+            <div class="stat-number" id="totalVotes">0</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">Jumlah Mentor</div>
+            <div class="stat-number" id="mentorCount">0</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">Peringkat #1</div>
+            <div class="stat-number" id="winnerName">-</div>
+        </div>
+
+    </div>
+
+    <!-- LIST MENTOR -->
+    <div class="mentor-list" id="mentorList"></div>
+
+    <div class="footer">
+        Voting ditutup pada 31 Desember 2026
+    </div>
+
+</div>
+
+
+<script>
+
+    // ==============================
+    // DATA MENTOR
+    // ==============================
+
+    let mentors = [
+        {
+            id: 1,
+            name: "Andi Pratama",
+            role: "Web Development",
+            avatar: "A",
+            votes: 125
+        },
+        {
+            id: 2,
+            name: "Budi Santoso",
+            role: "UI / UX Design",
+            avatar: "B",
+            votes: 98
+        },
+        {
+            id: 3,
+            name: "Citra Lestari",
+            role: "Programming",
+            avatar: "C",
+            votes: 76
+        },
+        {
+            id: 4,
+            name: "Dimas Saputra",
+            role: "Database",
+            avatar: "D",
+            votes: 54
+        },
+        {
+            id: 5,
+            name: "Eka Ramadhan",
+            role: "Cyber Security",
+            avatar: "E",
+            votes: 32
+        }
+    ];
+
+
+    // ==============================
+    // CEK VOTE
+    // ==============================
+
+    let votedMentor = localStorage.getItem("votedMentor");
+
+
+    // ==============================
+    // RENDER
+    // ==============================
+
+    function renderMentors() {
+
+        const mentorList = document.getElementById("mentorList");
+
+        mentorList.innerHTML = "";
+
+        // Urutkan berdasarkan vote terbanyak
+        mentors.sort((a, b) => b.votes - a.votes);
+
+        let totalVotes = mentors.reduce(
+            (total, mentor) => total + mentor.votes,
+            0
+        );
+
+        mentors.forEach((mentor, index) => {
+
+            let percentage = totalVotes === 0
+                ? 0
+                : ((mentor.votes / totalVotes) * 100).toFixed(1);
+
+            const card = document.createElement("div");
+
+            card.className = "mentor";
+
+            card.innerHTML = `
+
+                <div class="mentor-top">
+
+                    <div class="rank">
+                        ${index + 1}
+                    </div>
+
+                    <div class="avatar">
+                        ${mentor.avatar}
+                    </div>
+
+                    <div class="mentor-info">
+
+                        <div class="mentor-name">
+                            ${mentor.name}
+                        </div>
+
+                        <div class="mentor-role">
+                            ${mentor.role}
+                        </div>
+
+                    </div>
+
+                    <div class="vote-count">
+
+                        <div class="vote-number">
+                            ${mentor.votes}
+                        </div>
+
+                        <div class="vote-label">
+                            votes
+                        </div>
+
+                    </div>
+
+                    <button
+                        class="vote-btn ${votedMentor == mentor.id ? "voted" : ""}"
+                        onclick="vote(${mentor.id})"
+                        ${votedMentor ? "disabled" : ""}
+                    >
+                        ${votedMentor == mentor.id ? "✓ Voted" : "♥ Vote"}
+                    </button>
+
+                </div>
+
+                <div class="progress-section">
+
+                    <div class="progress-info">
+
+                        <span>
+                            Persentase Vote
+                        </span>
+
+                        <span>
+                            ${percentage}%
+                        </span>
+
+                    </div>
+
+                    <div class="progress-bar">
+
+                        <div
+                            class="progress"
+                            style="width: ${percentage}%"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+            mentorList.appendChild(card);
+
+        });
+
+
+        // ==============================
+        // UPDATE STATISTIK
+        // ==============================
+
+        document.getElementById("totalVotes").textContent =
+            totalVotes;
+
+        document.getElementById("mentorCount").textContent =
+            mentors.length;
+
+        document.getElementById("winnerName").textContent =
+            mentors.length > 0
+                ? mentors[0].name
+                : "-";
+    }
+
+
+    // ==============================
+    // VOTE
+    // ==============================
+
+    function vote(id) {
+
+        // Cegah vote kedua
+        if (votedMentor) {
+            alert("Kamu sudah memberikan vote.");
+            return;
+        }
+
+        const mentor = mentors.find(
+            mentor => mentor.id === id
+        );
+
+        if (!mentor) return;
+
+        mentor.votes++;
+
+        // Simpan bahwa user sudah vote
+        localStorage.setItem(
+            "votedMentor",
+            id
+        );
+
+        votedMentor = id;
+
+        renderMentors();
+
+        alert(
+            `Vote berhasil diberikan kepada ${mentor.name}!`
+        );
+    }
+
+
+    // ==============================
+    // INITIALIZE
+    // ==============================
+
+    renderMentors();
+
+</script>
+
+</body>
+</html>
