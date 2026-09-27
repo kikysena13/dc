@@ -402,16 +402,17 @@ client.on("interactionCreate", async (interaction) => {
     }
 });
 
-client.on('ready', async () => {
+client.on('ready', () => {
     console.log(`Client has been logged into! ${client.user.username}`);
-    await registerHelpSlashCommand(client).catch(error => {
+    registerHelpSlashCommand(client).catch(error => {
         console.error("Failed to register /help slash command:", error.message);
     });
-    const guild = process.env.DISCORD_GUILD_ID
-        ? client.guilds.cache.get(process.env.DISCORD_GUILD_ID)
-        : client.guilds.cache.first();
-    if (guild) await guild.members.fetch();
-    startDashboardServer();
+
+    const guild = getArenaGuild();
+    if (!guild) return;
+    guild.members.fetch()
+        .then(() => syncArenaParticipants(guild))
+        .catch(error => console.error("Failed to fetch guild members or sync arena:", error));
 });
 
 function extractIgn(memberName) {
@@ -590,18 +591,6 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-client.once("ready", async () => {
-    const guild = getArenaGuild();
-    if (!guild) return;
-
-    try {
-        await guild.members.fetch();
-        syncArenaParticipants(guild);
-    } catch (error) {
-        console.error("Failed to sync arena participants:", error);
-    }
-});
-
 client.on("guildMemberUpdate", (oldMember, newMember) => {
     if (oldMember.roles.cache.equals(newMember.roles.cache)) return;
     syncArenaParticipants(newMember.guild);
@@ -611,4 +600,6 @@ if (!token) {
     throw new Error("DISCORD_TOKEN is missing from .env");
 }
 
+// Start the HTTP listener before connecting to Discord so Railway can pass its healthcheck.
+startDashboardServer();
 client.login(token);
