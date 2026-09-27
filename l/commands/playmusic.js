@@ -15,8 +15,8 @@ const SpotifyWebApi = require("spotify-web-api-node");
 
 // ===== SPOTIFY CONFIGURATION =====
 // Ganti dengan Spotify Client ID dan Secret Anda dari https://developer.spotify.com
-const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || "58f3d7add2bd49bcac0f5e2f9270285c";
-const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || "3dcc37bfa8c340d094ee2fb58e21c81b";
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || "";
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || "";
 const SPOTIFY_ENABLED = process.env.SPOTIFY_ENABLED !== "false"; // Set ke "false" di .env untuk disable
 
 const spotifyApi = new SpotifyWebApi({
