@@ -87,6 +87,8 @@
     "leviaRp": 0,
     "whellCurrency": "RP",
     "role": "WHELL",
-    "bio": "I’m not better than everyone, but not everyone’s better than me either"
+    "bio": "I’m not better than everyone, but not everyone’s better than me either",
+    "profileBackground": "https://static2.klipy.com/ii/925f17378dd1893b674a723c07535afe/67/c6/AXpsCEPp.gif",
+    "profileBackgroundPosition": "center"
   }
 }
