@@ -6,7 +6,7 @@ const path = require("path");
 const Discord = require("discord.js");
 const { handleStudyScheduleCommand } = require("./commands/studySchedule");
 const { handleAIChatCommand, handleAIChatReply, handleAIMention } = require("./commands/aiChat");
-const { handleHelpCommand } = require("./commands/help");
+const { handleHelpCommand, handleHelpInteraction, registerHelpSlashCommand } = require("./commands/help");
 
 const LOCK_FILE = path.join(__dirname, ".bot.lock");
 
@@ -388,8 +388,25 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     recordVoiceStateChange(oldState, newState);
 });
 
+client.on("interactionCreate", async (interaction) => {
+    try {
+        await handleHelpInteraction(interaction);
+    } catch (error) {
+        console.error("Failed to respond to /help:", error);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+                content: "Gagal menampilkan daftar command. Coba lagi sebentar.",
+                ephemeral: true
+            }).catch(replyError => console.error("Failed to send /help error reply:", replyError));
+        }
+    }
+});
+
 client.on('ready', async () => {
     console.log(`Client has been logged into! ${client.user.username}`);
+    await registerHelpSlashCommand(client).catch(error => {
+        console.error("Failed to register /help slash command:", error.message);
+    });
     const guild = process.env.DISCORD_GUILD_ID
         ? client.guilds.cache.get(process.env.DISCORD_GUILD_ID)
         : client.guilds.cache.first();
