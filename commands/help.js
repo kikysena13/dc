@@ -70,6 +70,14 @@ const HELP_PAGES = [
 	}
 ];
 
+function createHelpEmbeds() {
+	return HELP_PAGES.map((page) => new MessageEmbed()
+		.setColor("#5865F2")
+		.setTitle(page.title)
+		.setDescription(page.description)
+		.setFooter({ text: "Command bantuan milik Reysie bot ini" }));
+}
+
 async function handleHelpCommand(message) {
 	const parts = message.content.trim().toLowerCase().split(/\s+/);
 	const command = parts[0];
@@ -83,16 +91,48 @@ async function handleHelpCommand(message) {
 		return false;
 	}
 
-	const embeds = HELP_PAGES.map((page) => new MessageEmbed()
-		.setColor("#5865F2")
-		.setTitle(page.title)
-		.setDescription(page.description));
-
 	await message.reply({
-		content: "📚 **Daftar command bot yang tersedia** (bantuan musik: `!help music`)",
-		embeds
+		content: "📚 **Daftar command Reysie bot ini** (bantuan musik: `!help music`)",
+		embeds: createHelpEmbeds()
 	});
 	return true;
 }
 
-module.exports = { handleHelpCommand };
+async function handleHelpInteraction(interaction) {
+	if (!interaction.isCommand() || interaction.commandName !== "help") {
+		return false;
+	}
+
+	await interaction.reply({
+		content: "📚 **Daftar command Reysie bot ini**",
+		embeds: createHelpEmbeds(),
+		ephemeral: true
+	});
+	return true;
+}
+
+async function registerHelpSlashCommand(client) {
+	const guildId = process.env.DISCORD_GUILD_ID || undefined;
+	if (guildId && !client.guilds.cache.has(guildId)) {
+		console.warn(`Cannot register /help: configured guild ${guildId} is not available to the bot.`);
+		return;
+	}
+
+	const commandManager = client.application.commands;
+	const commands = await commandManager.fetch({ guildId });
+	const existing = Array.from(commands.values()).find((command) => command.name === "help");
+	const commandData = {
+		name: "help",
+		description: "Lihat daftar command Reysie bot ini"
+	};
+
+	if (existing) {
+		await commandManager.edit(existing.id, commandData, guildId);
+	} else {
+		await commandManager.create(commandData, guildId);
+	}
+
+	console.log(`Registered ${guildId ? "guild" : "global"} slash command /help.`);
+}
+
+module.exports = { handleHelpCommand, handleHelpInteraction, registerHelpSlashCommand };
