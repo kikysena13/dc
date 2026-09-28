@@ -5,6 +5,7 @@ const http = require("http");
 const path = require("path");
 const Discord = require("discord.js");
 const { handleStudyScheduleCommand } = require("./commands/studySchedule");
+const { handleGuildMemberAdd, startNewMemberRoleScheduler } = require("./commands/newMemberRole");
 const { handleAIChatCommand, handleAIChatReply, handleAIMention } = require("./commands/aiChat");
 const { handleHelpCommand, handleHelpInteraction, registerHelpSlashCommand } = require("./commands/help");
 const {
@@ -435,6 +436,14 @@ client.once('ready', () => {
     guild.members.fetch()
         .then(() => syncArenaParticipants(guild))
         .catch(error => console.error("Failed to fetch guild members or sync arena:", error));
+
+    // Mulai scheduler auto-remove role "New" setelah 3 hari
+    startNewMemberRoleScheduler(() => getArenaGuild());
+});
+
+// ── Auto-assign role "New" saat member bergabung ─────────────────────────────
+client.on('guildMemberAdd', async (member) => {
+    await handleGuildMemberAdd(member);
 });
 
 function extractIgn(memberName) {
