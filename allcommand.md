@@ -37,6 +37,7 @@ Bot harus berada di voice channel yang sama dengan pengguna untuk memutar lagu. 
 
 | Command | Alias | Fungsi |
 |---|---|---|
+| `jadwal` | `!jadwal`, `schedule`, `!schedule` | Menampilkan jadwal belajar mingguan. |
 | `music` | `!music` | Menampilkan daftar lagu statis dalam format tabel. |
 | `!randomcode` | `!code`, `!gencode`, `!buatcode`, serta versi tanpa `!` | Membuat kode acak. Format: `!randomcode [panjang] [jumlah] [tipe]`. Panjang 1–50, jumlah 1–10. |
 | `!randomcode help` | `?`, `bantuan` | Menampilkan bantuan random code. |
@@ -90,10 +91,6 @@ Posisi crop yang didukung: `center`, `top`, `bottom`, `left`, `right`, `top-left
 
 ## ⚙️ Fitur Otomatis Non-Command
 
-- Setiap pesan member yang berbeda di server dashboard memberi **1 Chat XP**; setiap menit voice yang tercatat memberi **1 Voice XP**.
-- **Total XP = Chat XP + Voice XP**; level naik setiap 100 XP. Pesan identik yang dikirim terpisah tetap dihitung masing-masing.
-- XP hanya dihitung dari server `DISCORD_GUILD_ID` (atau server pertama bot jika variabel itu tidak diatur), bukan dari server bot lain.
-- Sesi voice direkonsiliasi ketika bot mulai ulang agar waktu bot offline tidak dihitung. Filter Bulanan disembunyikan karena sistem belum menyimpan riwayat aktivitas per bulan.
 - Aktivitas chat dan voice dicatat otomatis ke `data/activity-points.json`.
 - Data spending dan profil disimpan ke `data/whellevi-points.json`.
 - Peserta Arena disinkronkan otomatis berdasarkan role `Punishing`.

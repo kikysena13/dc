@@ -8,7 +8,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/activity.test.js"
   },
   "dependencies": {
     "@discordjs/voice": "^0.19.2",

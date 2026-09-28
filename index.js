@@ -7,6 +7,13 @@ const Discord = require("discord.js");
 const { handleStudyScheduleCommand } = require("./commands/studySchedule");
 const { handleAIChatCommand, handleAIChatReply, handleAIMention } = require("./commands/aiChat");
 const { handleHelpCommand, handleHelpInteraction, registerHelpSlashCommand } = require("./commands/help");
+const {
+    getAllMemberActivities,
+    recordChatMessage,
+    recordVoiceStateChange,
+    initializeVoiceSessions,
+    finalizeVoiceSessions
+} = require("./commands/activity");
 
 const LOCK_FILE = path.join(__dirname, ".bot.lock");
 
@@ -42,7 +49,14 @@ function ensureSingleInstance() {
     }
 }
 
-process.on("exit", cleanupLock);
+process.on("exit", () => {
+    try {
+        finalizeVoiceSessions();
+    } catch (error) {
+        console.error("Failed to save voice activity during shutdown:", error);
+    }
+    cleanupLock();
+});
 process.on("SIGINT", () => process.exit(0));
 process.on("SIGTERM", () => process.exit(0));
 ensureSingleInstance();
@@ -58,12 +72,11 @@ const { handleWebCommand } = require("./commands/web");
 const { handleWhellLeviCommand } = require("./commands/whellevi");
 const spendingPoints = require("./commands/whellevi");
 const { handleInputCommand } = require("./commands/input");
-const { getMemberActivity, recordChatMessage, recordVoiceStateChange } = require("./commands/activity");
 const ARENA_PARTICIPANT_ROLE = "Punishing";
+const CHAT_XP_PER_MESSAGE = 1;
+const VOICE_XP_PER_MINUTE = 1;
 
 const processedMessageIds = new Map();
-const recentCommandSignatures = new Map();
-
 function markMessageProcessed(message) {
     const now = Date.now();
     processedMessageIds.set(message.id, now);
@@ -73,10 +86,6 @@ function markMessageProcessed(message) {
             processedMessageIds.delete(message.id);
         }
     }, 3000);
-}
-
-function getCommandSignature(message) {
-    return `${message.author.id}:${message.content.trim().toLowerCase()}`;
 }
 
 // ===== GLOBAL ERROR HANDLERS =====
@@ -109,23 +118,31 @@ const MANUAL_MEMBERS = [
 ];
 const token = process.env.DISCORD_TOKEN;
 
+function getDashboardGuildId() {
+    return process.env.DISCORD_GUILD_ID || client.guilds.cache.first()?.id || null;
+}
+
+function isDashboardGuild(guildId) {
+    return Boolean(guildId && guildId === getDashboardGuildId());
+}
+
 function getDashboardMembers() {
-    const configuredGuildId = process.env.DISCORD_GUILD_ID;
-    const guild = configuredGuildId
-        ? client.guilds.cache.get(configuredGuildId)
-        : client.guilds.cache.first();
+    const guildId = getDashboardGuildId();
+    const guild = guildId ? client.guilds.cache.get(guildId) : null;
 
     if (!guild) {
         throw new Error("Bot is not connected to the configured Discord server.");
     }
 
     const points = spendingPoints.getPoints();
+    const activities = getAllMemberActivities();
     return guild.members.cache
         .filter(member => !member.user.bot)
         .map(member => {
-            const activity = getMemberActivity(member.id);
-            const chatXp = activity.chatMessages || 0;
-            const voiceXp = activity.voiceMinutes || 0;
+            const activity = activities.get(member.id) || { chatMessages: 0, voiceMinutes: 0 };
+            const chatXp = activity.chatMessages * CHAT_XP_PER_MESSAGE;
+            const voiceXp = activity.voiceMinutes * VOICE_XP_PER_MINUTE;
+            const totalXp = chatXp + voiceXp;
             const memberPoints = points[member.id] || {};
             const roleNames = member.roles.cache
                 .filter(role => role.name !== "@everyone")
@@ -152,22 +169,19 @@ function getDashboardMembers() {
                 bio: memberPoints.bio || "",
                 whellTheme: spendingPoints.getRoleSpending(memberPoints || {}, roleNames, "WHELL"),
                 leviaTheme: spendingPoints.getRoleSpending(memberPoints || {}, roleNames, "LEVIA"),
-                level: Math.floor((chatXp + voiceXp) / 100),
-                xp: chatXp + voiceXp,
+                level: Math.floor(totalXp / 100),
+                xp: totalXp,
                 chatXp,
                 voiceXp,
-                monthlyXp: 0,
-                progress: (chatXp + voiceXp) % 100
+                progress: totalXp % 100
             };
         });
 
 }
 
 function getArenaGuild() {
-    const configuredGuildId = process.env.DISCORD_GUILD_ID;
-    return configuredGuildId
-        ? client.guilds.cache.get(configuredGuildId)
-        : client.guilds.cache.first();
+    const guildId = getDashboardGuildId();
+    return guildId ? client.guilds.cache.get(guildId) : null;
 }
 
 function getArenaParticipants(guild) {
@@ -385,7 +399,9 @@ function startDashboardServer() {
 }
 
 client.on('voiceStateUpdate', (oldState, newState) => {
-    recordVoiceStateChange(oldState, newState);
+    if (isDashboardGuild(newState.guild.id)) {
+        recordVoiceStateChange(oldState, newState);
+    }
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -402,7 +418,7 @@ client.on("interactionCreate", async (interaction) => {
     }
 });
 
-client.on('ready', () => {
+client.once('ready', () => {
     console.log(`Client has been logged into! ${client.user.username}`);
     registerHelpSlashCommand(client).catch(error => {
         console.error("Failed to register /help slash command:", error.message);
@@ -410,6 +426,12 @@ client.on('ready', () => {
 
     const guild = getArenaGuild();
     if (!guild) return;
+
+    const activeVoiceUserIds = [...guild.voiceStates.cache.values()]
+        .filter(voiceState => voiceState.channelId && !voiceState.member?.user.bot)
+        .map(voiceState => voiceState.id);
+    initializeVoiceSessions(activeVoiceUserIds);
+
     guild.members.fetch()
         .then(() => syncArenaParticipants(guild))
         .catch(error => console.error("Failed to fetch guild members or sync arena:", error));
@@ -487,17 +509,11 @@ client.on('messageCreate', async (message) => {
         return;
     }
 
-    const commandSignature = getCommandSignature(message);
-    const previousTimestamp = recentCommandSignatures.get(commandSignature);
-    if (previousTimestamp && Date.now() - previousTimestamp < 3000) {
-        return;
-    }
-    recentCommandSignatures.set(commandSignature, Date.now());
-    setTimeout(() => recentCommandSignatures.delete(commandSignature), 3000);
-
     markMessageProcessed(message);
 
-    recordChatMessage(message.author);
+    if (message.guild && isDashboardGuild(message.guild.id)) {
+        recordChatMessage(message.author);
+    }
 
     if (/^!ai(?:\s|$)/i.test(message.content.trim())) {
         const args = message.content.trim().split(/\s+/).slice(1);

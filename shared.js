@@ -61,7 +61,7 @@ const sortedMembers = (filter) => {
             return getNormalizedSpendingValue(b, selectedRole) - getNormalizedSpendingValue(a, selectedRole);
         }
 
-        const xpField = filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp';
+        const xpField = filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'xp';
         return b[xpField] - a[xpField];
     });
 };
@@ -78,7 +78,7 @@ const renderLeaderboard = (filter = 'overall') => {
         const spendingRole = getSpendingRole(member);
         const xp = selectedRole === 'SPENDING'
             ? spendingRole === 'WHELL' ? member.whellRp : member.leviaRp
-            : selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp'];
+            : selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member[filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'xp'];
         const activityLabel = filter === 'chat' ? 'pesan' : filter === 'voice' ? 'menit' : 'poin';
         const value = selectedRole
             ? `${member[(selectedRole === 'WHELL' || spendingRole === 'WHELL') ? 'whellCurrency' : 'leviaCurrency'] === 'RP' ? 'Rp ' : '$'}${formatXp(xp)}`
@@ -286,11 +286,32 @@ const renderArena = (arenaData) => {
 // ── API loaders with Instant Cache (SWR) ─────────────────────────────────────
 const API_URL = 'https://midnight-lounge-api-production-c038.up.railway.app';
 
+const renderActivityStats = (data) => {
+    const members = Array.isArray(data?.members) ? data.members : [];
+    const count = (value) => {
+        const number = Number(value);
+        return Number.isFinite(number) ? Math.max(0, number) : 0;
+    };
+    const totalChatMessages = members.reduce((total, member) => total + count(member.chatXp), 0);
+    const totalVoiceMinutes = members.reduce((total, member) => total + count(member.voiceXp), 0);
+    const activeMembers = members.filter((member) => count(member.chatXp) > 0 || count(member.voiceXp) > 0).length;
+
+    const totalMembersEl = document.getElementById('total-members');
+    const activeMembersEl = document.getElementById('active-members');
+    const totalChatMessagesEl = document.getElementById('total-chat-messages');
+    const totalVoiceHoursEl = document.getElementById('total-voice-hours');
+    if (totalMembersEl) totalMembersEl.textContent = formatXp(data.totalMembers || members.length);
+    if (activeMembersEl) activeMembersEl.textContent = formatXp(activeMembers);
+    if (totalChatMessagesEl) totalChatMessagesEl.textContent = formatXp(totalChatMessages);
+    if (totalVoiceHoursEl) {
+        totalVoiceHoursEl.innerHTML = `${formatXp(Math.round(totalVoiceMinutes / 6) / 10)}<span style="font-size:13px;color:var(--muted)"> jam</span>`;
+    }
+};
+
 const loadLeaderboard = async () => {
     // If we have cached data, update total-members right away
     if (PREVIEW_DATA && PREVIEW_DATA.members && PREVIEW_DATA.members.length > 0) {
-        const totalEl = document.getElementById('total-members');
-        if (totalEl) totalEl.textContent = formatXp(PREVIEW_DATA.totalMembers || PREVIEW_DATA.members.length);
+        renderActivityStats(PREVIEW_DATA);
     }
 
     try {
@@ -300,8 +321,7 @@ const loadLeaderboard = async () => {
         try {
             sessionStorage.setItem('ML_LEADERBOARD_CACHE', JSON.stringify(PREVIEW_DATA));
         } catch (e) {}
-        const totalEl = document.getElementById('total-members');
-        if (totalEl) totalEl.textContent = formatXp(PREVIEW_DATA.totalMembers || PREVIEW_DATA.members.length);
+        renderActivityStats(PREVIEW_DATA);
         return PREVIEW_DATA;
     } catch (err) {
         // If we had cache, don't throw error

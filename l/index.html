@@ -1023,7 +1023,7 @@
                 <button class="nav-item active"><span class="nav-icon">⌂</span><span>Main</span></button>
                 <button class="nav-item"><span class="nav-icon">♛</span><span>Leaderboard</span></button>
                 <button class="nav-item" data-role-filter="SPENDING"><span class="nav-icon">◉</span><span>Top Whell &amp; Levia</span></button>
-                <button class="nav-item"><span class="nav-icon">◷</span><span>Riwayat Musim</span></button>
+                <button class="nav-item"><span class="nav-icon">◷</span><span>Ringkasan XP</span></button>
 
             </nav>
         </aside>
@@ -1031,7 +1031,7 @@
         <main class="main">
             <header class="topbar">
                 <div class="breadcrumb">Workspace / <b>Ringkasan</b></div>
-                <div class="top-actions"><span class="period">Musim aktif: Juni 2026</span>
+                <div class="top-actions"><span class="period">XP akumulatif</span>
                     <div class="global-clock" aria-live="polite" aria-label="Jam global saat ini">
                         <span class="clock-dot"></span>
                         <span id="global-clock-time">00:00:00</span>
@@ -1050,22 +1050,22 @@
                     <article class="stat-card">
                         <div class="stat-head"><span>Total Member</span><span class="stat-icon">♙</span></div>
                         <div class="stat-value" id="total-members">0</div>
-                        <div class="stat-foot"><span class="up">+12.4%</span> dari bulan lalu</div>
+                        <div class="stat-foot">Member di server</div>
                     </article>
                     <article class="stat-card">
-                        <div class="stat-head"><span>Member Aktif</span><span class="stat-icon">◉</span></div>
-                        <div class="stat-value">486</div>
-                        <div class="stat-foot"><span class="up">38.9%</span> dari total member</div>
+                        <div class="stat-head"><span>Member dengan XP</span><span class="stat-icon">◉</span></div>
+                        <div class="stat-value" id="active-members">0</div>
+                        <div class="stat-foot">Member dengan aktivitas tercatat</div>
                     </article>
                     <article class="stat-card">
-                        <div class="stat-head"><span>Pesan Bulan Ini</span><span class="stat-icon">✦</span></div>
-                        <div class="stat-value">24,891</div>
-                        <div class="stat-foot"><span class="up">+8.7%</span> aktivitas chat</div>
+                        <div class="stat-head"><span>Total Pesan</span><span class="stat-icon">✦</span></div>
+                        <div class="stat-value" id="total-chat-messages">0</div>
+                        <div class="stat-foot">Total pesan tercatat</div>
                     </article>
                     <article class="stat-card">
-                        <div class="stat-head"><span>Aktivitas Voice</span><span class="stat-icon">◌</span></div>
-                        <div class="stat-value">1,840<span style="font-size:13px;color:var(--muted)"> jam</span></div>
-                        <div class="stat-foot"><span class="up">+16.2%</span> waktu voice</div>
+                        <div class="stat-head"><span>Total Voice</span><span class="stat-icon">◌</span></div>
+                        <div class="stat-value" id="total-voice-hours">0<span style="font-size:13px;color:var(--muted)"> jam</span></div>
+                        <div class="stat-foot">Total waktu voice tercatat</div>
                     </article>
                 </section>
 
@@ -1074,7 +1074,7 @@
                         <div class="panel-header">
                             <div>
                                 <h2 class="panel-title">Member teratas</h2>
-                                <p class="panel-subtitle">Kontributor paling aktif musim ini</p>
+                                <p class="panel-subtitle">Kontributor dengan XP akumulatif tertinggi</p>
                             </div><button class="text-button" data-scroll="leaderboard">Lihat semua →</button>
                         </div>
                         <div class="podium" id="podium"></div>
@@ -1082,16 +1082,13 @@
                     <article class="panel">
                         <div class="panel-header">
                             <div>
-                                <h2 class="panel-title">Musim berjalan</h2>
-                                <p class="panel-subtitle">Leaderboard bulanan</p>
-                            </div><span class="live-pill" style="padding:6px 9px;font-size:10px">AKTIF</span>
+                                <h2 class="panel-title">Cara hitung XP</h2>
+                                <p class="panel-subtitle">Perhitungan akumulatif</p>
+                            </div>
                         </div>
                         <div class="reset-box">
-                            <div class="eyebrow">Reset berikutnya</div>
-                            <div class="reset-date">01 Juli 2026</div>
-                            <p>Leaderboard akan dimulai dari awal untuk musim baru.</p>
-                            <div class="progress"><i style="width:68%"></i></div>
-                            <div class="reset-meta"><span>18 hari tersisa</span><span>68% berjalan</span></div>
+                            <div class="reset-date">1 pesan = 1 XP</div>
+                            <p>Setiap menit voice yang tercatat = 1 XP. Level naik setiap 100 XP. XP bulanan belum tersedia.</p>
                         </div>
                     </article>
                 </section>
@@ -1105,8 +1102,7 @@
                         <div class="filters" role="tablist"><button class="filter active"
                                 data-filter="overall">Overall</button><button class="filter"
                                 data-filter="chat">Chat</button><button class="filter"
-                                data-filter="voice">Voice</button><button class="filter"
-                                data-filter="monthly">Bulanan</button></div>
+                                data-filter="voice">Voice</button></div>
                     </div>
                     <div class="table-wrap">
                         <table>
@@ -1171,7 +1167,7 @@
                     return getNormalizedSpendingValue(b, selectedRole) - getNormalizedSpendingValue(a, selectedRole);
                 }
 
-                const xpField = filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp';
+                const xpField = filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'xp';
                 return b[xpField] - a[xpField];
             });
         };
@@ -1181,7 +1177,7 @@
                 const spendingRole = getSpendingRole(member);
                 const xp = selectedRole === 'SPENDING'
                     ? spendingRole === 'WHELL' ? member.whellRp : member.leviaRp
-                    : selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member[filter === 'overall' ? 'xp' : filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'monthlyXp'];
+                    : selectedRole === 'WHELL' ? member.whellRp : selectedRole === 'LEVIA' ? member.leviaRp : member[filter === 'chat' ? 'chatXp' : filter === 'voice' ? 'voiceXp' : 'xp'];
                 const activityLabel = filter === 'chat' ? 'pesan' : filter === 'voice' ? 'menit' : 'poin';
                 const value = selectedRole ? `${member[(selectedRole === 'WHELL' || spendingRole === 'WHELL') ? 'whellCurrency' : 'leviaCurrency'] === 'RP' ? 'Rp ' : '$'}${formatXp(xp)}` : `${formatXp(xp)} <small>${activityLabel}</small>`;
                 const title = selectedRole ? member.bio || 'Belum ada bio' : `LVL ${member.level}`;
@@ -1214,7 +1210,15 @@
             const response = await fetch(apiUrl, { cache: 'no-store' });
             if (!response.ok) throw new Error('Gagal mengambil data Discord');
             PREVIEW_DATA = await response.json();
-            document.getElementById('total-members').textContent = formatXp(PREVIEW_DATA.totalMembers || PREVIEW_DATA.members.length);
+            const members = Array.isArray(PREVIEW_DATA.members) ? PREVIEW_DATA.members : [];
+            const count = (value) => {
+                const number = Number(value);
+                return Number.isFinite(number) ? Math.max(0, number) : 0;
+            };
+            document.getElementById('total-members').textContent = formatXp(PREVIEW_DATA.totalMembers || members.length);
+            document.getElementById('active-members').textContent = formatXp(members.filter(member => count(member.chatXp) > 0 || count(member.voiceXp) > 0).length);
+            document.getElementById('total-chat-messages').textContent = formatXp(members.reduce((total, member) => total + count(member.chatXp), 0));
+            document.getElementById('total-voice-hours').innerHTML = `${formatXp(Math.round(members.reduce((total, member) => total + count(member.voiceXp), 0) / 6) / 10)}<span style="font-size:13px;color:var(--muted)"> jam</span>`;
             renderPodium();
             renderLeaderboard();
         };
