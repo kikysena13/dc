@@ -139,16 +139,16 @@
       "avatar": "https://cdn.discordapp.com/avatars/1327293325342019604/d8a755302e5303c1b6ce1e66a264441c.webp?size=96"
     },
     {
-      "discordId": "1158238796559700058",
-      "name": "Laurel",
-      "username": "ichi_laurel",
-      "avatar": "https://cdn.discordapp.com/avatars/1158238796559700058/a02c0b2d760a0514ff2bd0a4613889a6.webp?size=96"
-    },
-    {
       "discordId": "1557081543288160346",
       "name": "Laurel",
       "username": "cielaurel",
       "avatar": "https://cdn.discordapp.com/avatars/1557081543288160346/f7f2e9361e8a54ce6e72580ac7b967af.webp?size=96"
+    },
+    {
+      "discordId": "1158238796559700058",
+      "name": "Laurel",
+      "username": "ichi_laurel",
+      "avatar": "https://cdn.discordapp.com/avatars/1158238796559700058/a02c0b2d760a0514ff2bd0a4613889a6.webp?size=96"
     },
     {
       "discordId": "1321022196801474591",
@@ -470,18 +470,18 @@
         },
         {
           "player1": {
-            "discordId": "1158238796559700058",
-            "name": "Laurel",
-            "username": "ichi_laurel",
-            "avatar": "https://cdn.discordapp.com/avatars/1158238796559700058/a02c0b2d760a0514ff2bd0a4613889a6.webp?size=96",
-            "score": 33908251
-          },
-          "player2": {
             "discordId": "1557081543288160346",
             "name": "Laurel",
             "username": "cielaurel",
             "avatar": "https://cdn.discordapp.com/avatars/1557081543288160346/f7f2e9361e8a54ce6e72580ac7b967af.webp?size=96",
             "score": 0
+          },
+          "player2": {
+            "discordId": "1158238796559700058",
+            "name": "Laurel",
+            "username": "ichi_laurel",
+            "avatar": "https://cdn.discordapp.com/avatars/1158238796559700058/a02c0b2d760a0514ff2bd0a4613889a6.webp?size=96",
+            "score": 33908251
           },
           "winner": null
         },
