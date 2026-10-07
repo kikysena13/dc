@@ -342,6 +342,69 @@ function getArenaData() {
     return arenaData;
 }
 
+function getDashboardApiConfig() {
+    const configuredOrigins = (process.env.DASHBOARD_ALLOWED_ORIGINS || "")
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
+    return {
+        apiToken: process.env.DASHBOARD_API_TOKEN || "",
+        allowedOrigins: configuredOrigins,
+        serverHost: (process.env.DASHBOARD_HOST || process.env.PUBLIC_URL || "").replace(/\/$/, "")
+    };
+}
+
+function setDashboardCorsHeaders(response, request) {
+    const origin = request.headers.origin || "";
+    const requestHost = request.headers.host ? `http://${request.headers.host}` : "";
+    const { allowedOrigins, serverHost } = getDashboardApiConfig();
+    const isSameOrigin = !origin || origin === requestHost || (serverHost && origin === serverHost);
+    const isAllowedOrigin = !origin || isSameOrigin || allowedOrigins.includes(origin);
+
+    if (isAllowedOrigin) {
+        response.setHeader("Access-Control-Allow-Origin", origin || requestHost || "null");
+        response.setHeader("Vary", "Origin");
+    }
+    response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+}
+
+function requireDashboardAuth(request, response) {
+    const origin = request.headers.origin || "";
+    const requestHost = request.headers.host ? `http://${request.headers.host}` : "";
+    const { apiToken, allowedOrigins, serverHost } = getDashboardApiConfig();
+    const isSameOrigin = !origin || origin === requestHost || (serverHost && origin === serverHost);
+    const isAllowedOrigin = !origin || isSameOrigin || allowedOrigins.includes(origin);
+
+    if (origin && !isAllowedOrigin) {
+        response.writeHead(403, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ error: "Origin not allowed" }));
+        return false;
+    }
+
+    if (request.method === "OPTIONS") {
+        setDashboardCorsHeaders(response, request);
+        response.writeHead(204);
+        response.end();
+        return false;
+    }
+
+    if (apiToken) {
+        const authHeader = request.headers.authorization || "";
+        const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+        if (token !== apiToken) {
+            setDashboardCorsHeaders(response, request);
+            response.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
+            response.end(JSON.stringify({ error: "Unauthorized" }));
+            return false;
+        }
+    }
+
+    setDashboardCorsHeaders(response, request);
+    return true;
+}
+
 function startDashboardServer() {
     const dashboardFile = path.join(__dirname, "index.html");
     const server = http.createServer((request, response) => {
@@ -354,12 +417,13 @@ function startDashboardServer() {
         }
 
         if (requestPath === "/api/leaderboard") {
+            if (!requireDashboardAuth(request, response)) return;
+
             try {
                 const members = getDashboardMembers();
                 response.writeHead(200, {
                     "Content-Type": "application/json; charset=utf-8",
-                    "Cache-Control": "no-store",
-                    "Access-Control-Allow-Origin": "*"
+                    "Cache-Control": "no-store"
                 });
                 response.end(JSON.stringify({ members, totalMembers: members.length }));
             } catch (error) {
@@ -370,12 +434,13 @@ function startDashboardServer() {
         }
 
         if (requestPath === "/dataarena.json" || requestPath === "/data/dataarena.json") {
+            if (!requireDashboardAuth(request, response)) return;
+
             try {
                 const arenaData = getArenaData();
                 response.writeHead(200, {
                     "Content-Type": "application/json; charset=utf-8",
-                    "Cache-Control": "no-store",
-                    "Access-Control-Allow-Origin": "*"
+                    "Cache-Control": "no-store"
                 });
                 response.end(JSON.stringify(arenaData));
             } catch (error) {
