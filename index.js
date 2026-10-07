@@ -12,6 +12,9 @@ const {
     getAllMemberActivities,
     recordChatMessage,
     recordVoiceStateChange,
+    recordGuildMemberJoin,
+    getMessageActivity,
+    getRecentDashboardActivity,
     initializeVoiceSessions,
     finalizeVoiceSessions
 } = require("./commands/activity");
@@ -106,7 +109,8 @@ const client = new Discord.Client({
         "GUILD_MESSAGES", 
         "GUILD_MEMBERS", 
         "MESSAGE_CONTENT",
-        "GUILD_VOICE_STATES"
+        "GUILD_VOICE_STATES",
+        ...(process.env.DISCORD_PRESENCE_ENABLED === "true" ? ["GUILD_PRESENCES"] : [])
     ],
     partials: ["CHANNEL", "MESSAGE"]
 });
@@ -178,6 +182,55 @@ function getDashboardMembers() {
             };
         });
 
+}
+
+function getServerHubDashboard() {
+    const guildId = getDashboardGuildId();
+    const guild = guildId ? client.guilds.cache.get(guildId) : null;
+    if (!guild) throw new Error("Bot is not connected to the configured Discord server.");
+
+    const members = getDashboardMembers()
+        .map(member => ({
+            id: member.id,
+            username: member.username,
+            displayName: member.displayName,
+            avatar: member.avatar,
+            xp: member.xp,
+            messages: member.chatXp,
+            voiceMinutes: member.voiceXp
+        }))
+        .sort((first, second) => second.xp - first.xp);
+
+    const voiceCounts = new Map();
+    for (const voiceState of guild.voiceStates.cache.values()) {
+        if (!voiceState.channelId || voiceState.member?.user.bot) continue;
+        const channelName = voiceState.channel?.name || "Voice channel";
+        voiceCounts.set(channelName, (voiceCounts.get(channelName) || 0) + 1);
+    }
+
+    const metrics = {
+        memberCount: guild.memberCount || members.length,
+        onlineCount: process.env.DISCORD_PRESENCE_ENABLED === "true"
+            ? guild.members.cache.filter(member => !member.user.bot && member.presence && member.presence.status !== "offline").size
+            : null,
+        messageCount: members.reduce((total, member) => total + member.messages, 0),
+        voiceCount: [...voiceCounts.values()].reduce((total, count) => total + count, 0)
+    };
+
+    return {
+        server: { id: guild.id, name: guild.name },
+        metrics,
+        messageActivity: {
+            "24h": getMessageActivity("24h"),
+            "7d": getMessageActivity("7d"),
+            "30d": getMessageActivity("30d")
+        },
+        voiceChannels: [...voiceCounts.entries()]
+            .map(([name, count]) => ({ name, count }))
+            .sort((first, second) => second.count - first.count),
+        leaderboard: members.slice(0, 100),
+        recentActivity: getRecentDashboardActivity(20)
+    };
 }
 
 function getArenaGuild() {
@@ -390,15 +443,20 @@ function requireDashboardAuth(request, response) {
         return false;
     }
 
-    if (apiToken) {
-        const authHeader = request.headers.authorization || "";
-        const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-        if (token !== apiToken) {
-            setDashboardCorsHeaders(response, request);
-            response.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
-            response.end(JSON.stringify({ error: "Unauthorized" }));
-            return false;
-        }
+    if (!apiToken) {
+        setDashboardCorsHeaders(response, request);
+        response.writeHead(503, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ error: "Dashboard API authentication is not configured." }));
+        return false;
+    }
+
+    const authHeader = request.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    if (token !== apiToken) {
+        setDashboardCorsHeaders(response, request);
+        response.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
+        response.end(JSON.stringify({ error: "Unauthorized" }));
+        return false;
     }
 
     setDashboardCorsHeaders(response, request);
@@ -426,6 +484,22 @@ function startDashboardServer() {
                     "Cache-Control": "no-store"
                 });
                 response.end(JSON.stringify({ members, totalMembers: members.length }));
+            } catch (error) {
+                response.writeHead(503, { "Content-Type": "application/json; charset=utf-8" });
+                response.end(JSON.stringify({ error: error.message }));
+            }
+            return;
+        }
+
+        if (requestPath === "/api/serverhub/dashboard") {
+            if (!requireDashboardAuth(request, response)) return;
+
+            try {
+                response.writeHead(200, {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Cache-Control": "no-store"
+                });
+                response.end(JSON.stringify(getServerHubDashboard()));
             } catch (error) {
                 response.writeHead(503, { "Content-Type": "application/json; charset=utf-8" });
                 response.end(JSON.stringify({ error: error.message }));
@@ -508,6 +582,7 @@ client.once('ready', () => {
 
 // ── Auto-assign role "New" saat member bergabung ─────────────────────────────
 client.on('guildMemberAdd', async (member) => {
+    if (isDashboardGuild(member.guild.id)) recordGuildMemberJoin(member);
     await handleGuildMemberAdd(member);
 });
 
@@ -586,7 +661,7 @@ client.on('messageCreate', async (message) => {
     markMessageProcessed(message);
 
     if (message.guild && isDashboardGuild(message.guild.id)) {
-        recordChatMessage(message.author);
+        recordChatMessage(message.author, message.channel?.name);
     }
 
     if (/^!ai(?:\s|$)/i.test(message.content.trim())) {
