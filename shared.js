@@ -284,7 +284,16 @@ const renderArena = (arenaData) => {
 };
 
 // ── API loaders with Instant Cache (SWR) ─────────────────────────────────────
-const API_URL = 'https://midnight-lounge-api-production-c038.up.railway.app';
+const API_URL = window.__DASHBOARD_API_BASE_URL__ || window.location.origin || 'http://localhost:3000';
+const API_TOKEN = window.__DASHBOARD_API_TOKEN__ || localStorage.getItem('ML_DASHBOARD_API_TOKEN') || '';
+
+const buildApiHeaders = (extraHeaders = {}) => {
+    const headers = { ...extraHeaders };
+    if (API_TOKEN) {
+        headers.Authorization = `Bearer ${API_TOKEN}`;
+    }
+    return headers;
+};
 
 const renderActivityStats = (data) => {
     const members = Array.isArray(data?.members) ? data.members : [];
@@ -315,7 +324,9 @@ const loadLeaderboard = async () => {
     }
 
     try {
-        const response = await fetch(`${API_URL}/api/leaderboard`);
+        const response = await fetch(`${API_URL}/api/leaderboard`, {
+            headers: buildApiHeaders({ 'Cache-Control': 'no-store' })
+        });
         if (!response.ok) throw new Error('Gagal mengambil data Discord');
         PREVIEW_DATA = await response.json();
         try {
@@ -358,7 +369,9 @@ const loadArena = async () => {
     let membersData = PREVIEW_DATA.members && PREVIEW_DATA.members.length > 0 ? PREVIEW_DATA : { members: [] };
     if (!membersData.members || membersData.members.length === 0) {
         try {
-            const membersResponse = await fetch(`${API_URL}/api/leaderboard`);
+            const membersResponse = await fetch(`${API_URL}/api/leaderboard`, {
+                headers: buildApiHeaders({ 'Cache-Control': 'no-store' })
+            });
             if (membersResponse.ok) {
                 membersData = await membersResponse.json();
             }
