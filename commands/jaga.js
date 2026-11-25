@@ -28,18 +28,17 @@ function scheduleReconnect(guildId, target) {
 
 function monitorConnection(guildId, target, connection) {
     connection.on(VoiceConnectionStatus.Disconnected, () => {
+        console.warn(`[Jaga] Voice disconnected for guild ${guildId}; retrying.`);
         scheduleReconnect(guildId, target);
     });
 }
 
 function isConnectionHealthy(guildId, target) {
     const connection = getVoiceConnection(guildId);
-    const voiceState = target.guild.voiceStates?.cache?.get(target.botUserId);
     return Boolean(
         connection
         && connection.joinConfig.channelId === target.channelId
         && connection.state.status === VoiceConnectionStatus.Ready
-        && voiceState?.channelId === target.channelId
     );
 }
 
@@ -85,6 +84,7 @@ async function reconnectJaga(guildId, target) {
         target.connection = connection;
         monitorConnection(guildId, target, connection);
         await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+        console.info(`[Jaga] Reconnected to channel ${target.channelId} in guild ${guildId}.`);
     } catch (error) {
         if (target.connection) {
             target.connection.destroy();
@@ -116,7 +116,91 @@ async function handleJagaVoiceStateUpdate(oldState, newState) {
     const memberLeftTarget = oldState.channelId === target.channelId && newState.channelId !== target.channelId;
     if (!botLeftTarget && !memberLeftTarget) return false;
 
-    await ensureJagaConnection(guildId, target);
+    if (botLeftTarget) {
+        console.warn(`[Jaga] Bot left protected channel ${target.channelId} in guild ${guildId}.`);
+        await reconnectJaga(guildId, target);
+    } else {
+        await ensureJagaConnection(guildId, target);
+    }
+    return true;
+}
+
+async function startJaga(guild, voiceChannel, botUserId) {
+    const existingConnection = getVoiceConnection(guild.id);
+    const activeTarget = activeJagaChannels.get(guild.id);
+    if (
+        existingConnection?.joinConfig.channelId === voiceChannel.id
+        && activeTarget?.connection === existingConnection
+        && activeTarget.channelId === voiceChannel.id
+    ) {
+        return false;
+    }
+
+    stopJaga(guild.id);
+    const target = {
+        channelId: voiceChannel.id,
+        adapterCreator: guild.voiceAdapterCreator,
+        guild,
+        botUserId,
+        connection: existingConnection,
+        reconnectTimer: null,
+        reconnecting: false
+    };
+    activeJagaChannels.set(guild.id, target);
+
+    if (existingConnection?.joinConfig.channelId === voiceChannel.id) {
+        monitorConnection(guild.id, target, existingConnection);
+        startWatchdog(guild.id, target);
+        console.info(`[Jaga] Protecting channel ${voiceChannel.id} in guild ${guild.id}.`);
+        return false;
+    }
+
+    let connection;
+    try {
+        connection = joinVoiceChannel({
+            channelId: voiceChannel.id,
+            guildId: guild.id,
+            adapterCreator: guild.voiceAdapterCreator,
+            selfDeaf: true
+        });
+        target.connection = connection;
+        monitorConnection(guild.id, target, connection);
+        await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+        startWatchdog(guild.id, target);
+        console.info(`[Jaga] Connected to channel ${voiceChannel.id} in guild ${guild.id}.`);
+        return true;
+    } catch (error) {
+        if (connection && connection !== existingConnection) {
+            connection.destroy();
+        }
+        stopJaga(guild.id);
+        throw error;
+    }
+}
+
+async function startConfiguredJaga(client) {
+    const channelId = process.env.JAGA_CHANNEL_ID;
+    if (!channelId) return false;
+
+    const guildId = process.env.JAGA_GUILD_ID
+        || process.env.DISCORD_GUILD_ID
+        || client.guilds.cache.first()?.id;
+    if (!guildId) {
+        throw new Error("Set JAGA_GUILD_ID or DISCORD_GUILD_ID to use JAGA_CHANNEL_ID.");
+    }
+
+    const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId);
+    const voiceChannel = guild.channels.cache.get(channelId) || await guild.channels.fetch(channelId);
+    if (!voiceChannel || voiceChannel.type !== "GUILD_VOICE") {
+        throw new Error(`JAGA_CHANNEL_ID ${channelId} is not a voice channel in guild ${guildId}.`);
+    }
+
+    const permissions = voiceChannel.permissionsFor(guild.me || client.user);
+    if (!permissions?.has("CONNECT")) {
+        throw new Error(`Bot does not have CONNECT permission for JAGA_CHANNEL_ID ${channelId}.`);
+    }
+
+    await startJaga(guild, voiceChannel, client.user.id);
     return true;
 }
 
@@ -142,64 +226,22 @@ async function handleJagaCommand(message) {
         return true;
     }
 
-    const existingConnection = getVoiceConnection(message.guild.id);
-    const activeTarget = activeJagaChannels.get(message.guild.id);
-    if (
-        existingConnection?.joinConfig.channelId === voiceChannel.id
-        && activeTarget?.connection === existingConnection
-        && activeTarget.channelId === voiceChannel.id
-    ) {
-        await message.reply("✅ Bot sudah berada di voice channel dan akan tetap di sana.");
-        return true;
-    }
-
-    stopJaga(message.guild.id);
-    const target = {
-        channelId: voiceChannel.id,
-        adapterCreator: message.guild.voiceAdapterCreator,
-        guild: message.guild,
-        botUserId: message.client.user.id,
-        connection: existingConnection,
-        reconnectTimer: null,
-        reconnecting: false
-    };
-    activeJagaChannels.set(message.guild.id, target);
-
-    if (existingConnection?.joinConfig.channelId === voiceChannel.id) {
-        monitorConnection(message.guild.id, target, existingConnection);
-        startWatchdog(message.guild.id, target);
-        await message.reply("✅ Bot sudah berada di voice channel dan akan tetap di sana.");
-        return true;
-    }
-
-    let connection;
     try {
-        connection = joinVoiceChannel({
-            channelId: voiceChannel.id,
-            guildId: message.guild.id,
-            adapterCreator: message.guild.voiceAdapterCreator,
-            selfDeaf: true
-        });
-        target.connection = connection;
-        monitorConnection(message.guild.id, target, connection);
-        await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
-        startWatchdog(message.guild.id, target);
+        const connected = await startJaga(message.guild, voiceChannel, message.client.user.id);
+        await message.reply(connected
+            ? `✅ Bot masuk ke **${voiceChannel.name}** dan akan tetap di sana meskipun semua member keluar.`
+            : "✅ Bot sudah berada di voice channel dan akan tetap di sana.");
     } catch (error) {
-        if (connection && connection !== existingConnection) {
-            connection.destroy();
-        }
-        stopJaga(message.guild.id);
         console.error("Failed to join voice channel for !jaga:", error);
         await message.reply("❌ Bot gagal masuk ke voice channel. Coba lagi sebentar.");
-        return true;
     }
 
-    await message.reply(`✅ Bot masuk ke **${voiceChannel.name}** dan akan tetap di sana meskipun semua member keluar.`);
     return true;
 }
 
 module.exports = {
     handleJagaCommand,
     handleJagaVoiceStateUpdate,
+    startConfiguredJaga,
     stopJaga
 };

@@ -58,6 +58,7 @@ Bot Discord untuk komunitas dengan fitur musik, AI chat, leaderboard aktivitas d
 | `!leave`, `!dc`, `!disconnect` | Membuat bot keluar dari voice channel. |
 
 Bot dan pengguna harus berada di voice channel yang sama. Untuk pencarian judul, bot mencoba Spotify terlebih dahulu lalu menggunakan YouTube jika tersedia.
+Untuk menyambung otomatis setelah Railway me-restart bot, isi `JAGA_CHANNEL_ID` di Railway Variables dengan ID voice channel. `JAGA_GUILD_ID` opsional jika `DISCORD_GUILD_ID` sudah diatur.
 
 ### 🧰 Informasi dan utility
 

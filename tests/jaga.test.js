@@ -8,13 +8,29 @@ let joinCount = 0;
 let destroyCount = 0;
 const voiceStatesByGuild = new Map();
 const guildVoiceStates = new Map();
+const guildChannels = new Map();
 const guild = {
     id: "guild-1",
     me: {},
     voiceAdapterCreator: "adapter",
-    voiceStates: { cache: guildVoiceStates }
+    voiceStates: { cache: guildVoiceStates },
+    channels: {
+        cache: guildChannels,
+        async fetch(channelId) {
+            return guildChannels.get(channelId);
+        }
+    }
 };
 voiceStatesByGuild.set(guild.id, guildVoiceStates);
+const channel = {
+    id: "voice-1",
+    name: "General",
+    type: "GUILD_VOICE",
+    permissionsFor() {
+        return { has: permission => permission === "CONNECT" };
+    }
+};
+guildChannels.set(channel.id, channel);
 const connection = {
     joinConfig: { channelId: "voice-1" },
     state: { status: "ready" },
@@ -54,7 +70,11 @@ require.cache[voiceModulePath] = {
     }
 };
 
-const { handleJagaCommand, handleJagaVoiceStateUpdate } = require("../commands/jaga");
+const {
+    handleJagaCommand,
+    handleJagaVoiceStateUpdate,
+    startConfiguredJaga
+} = require("../commands/jaga");
 const { handlePlayMusicCommand } = require("../commands/playmusic");
 
 function createMessage(content, voiceChannel) {
@@ -72,14 +92,6 @@ function createMessage(content, voiceChannel) {
 }
 
 async function run() {
-    const channel = {
-        id: "voice-1",
-        name: "General",
-        permissionsFor() {
-            return { has: permission => permission === "CONNECT" };
-        }
-    };
-
     const unrelatedMessage = createMessage("hello", channel);
     assert.strictEqual(await handleJagaCommand(unrelatedMessage), false);
     assert.deepStrictEqual(unrelatedMessage.replies, []);
@@ -107,18 +119,67 @@ async function run() {
     assert.match(alreadyJoinedMessage.replies[0], /sudah berada di voice channel/);
 
     joinMessage.guild.voiceStates.cache.set("bot-1", { channelId: null });
+    connection.state.status = "disconnected";
     const lastMemberLeftVoice = {
-        id: "member-1",
+        id: "bot-1",
         guild: { id: "guild-1" },
         channelId: null
     };
     assert.strictEqual(await handleJagaVoiceStateUpdate({ channelId: "voice-1" }, lastMemberLeftVoice), true);
-    assert.strictEqual(joinCount, 2, "the bot should reconnect when the last member leaves its protected voice channel");
+    assert.strictEqual(joinCount, 2, "the bot should reconnect after leaving its protected voice channel");
 
     const leaveMessage = createMessage("!leave", channel);
     assert.strictEqual(await handlePlayMusicCommand(leaveMessage), true);
     assert.strictEqual(destroyCount, 2, "!leave should disconnect an idle !jaga connection");
     assert.match(leaveMessage.replies[0], /Bot keluar dari voice channel/);
+
+    currentConnection = connection;
+    connection.state.status = "ready";
+    const healthyMessage = createMessage("!jaga", channel);
+    await handleJagaCommand(healthyMessage);
+    const joinsBeforeMemberLeaves = joinCount;
+    const memberLeftVoice = {
+        id: "member-1",
+        guild: { id: "guild-1" },
+        channelId: null
+    };
+    guildVoiceStates.delete("bot-1");
+    assert.strictEqual(
+        await handleJagaVoiceStateUpdate({ channelId: "voice-1" }, memberLeftVoice),
+        true
+    );
+    assert.strictEqual(
+        joinCount,
+        joinsBeforeMemberLeaves,
+        "a healthy voice connection must not be reset just because the bot voice state is uncached"
+    );
+
+    await handlePlayMusicCommand(createMessage("!leave", channel));
+
+    const previousJagaChannelId = process.env.JAGA_CHANNEL_ID;
+    const previousJagaGuildId = process.env.JAGA_GUILD_ID;
+    try {
+        process.env.JAGA_CHANNEL_ID = "voice-1";
+        process.env.JAGA_GUILD_ID = "guild-1";
+        const client = {
+            user: { id: "bot-1" },
+            guilds: {
+                cache: { get: guildId => guildId === guild.id ? guild : null }
+            }
+        };
+        assert.strictEqual(await startConfiguredJaga(client), true);
+        assert.strictEqual(joinCount, 3, "configured voice targets should be restored after bot startup");
+        assert.strictEqual(currentConnection.joinConfig.channelId, "voice-1");
+
+        const stopConfiguredMessage = createMessage("!leave", channel);
+        assert.strictEqual(await handlePlayMusicCommand(stopConfiguredMessage), true);
+        assert.strictEqual(destroyCount, 4);
+    } finally {
+        if (previousJagaChannelId === undefined) delete process.env.JAGA_CHANNEL_ID;
+        else process.env.JAGA_CHANNEL_ID = previousJagaChannelId;
+        if (previousJagaGuildId === undefined) delete process.env.JAGA_GUILD_ID;
+        else process.env.JAGA_GUILD_ID = previousJagaGuildId;
+    }
 
     console.log("Jaga command tests passed.");
 }

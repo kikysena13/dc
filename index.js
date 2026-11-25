@@ -65,7 +65,11 @@ process.on("SIGINT", () => process.exit(0));
 process.on("SIGTERM", () => process.exit(0));
 ensureSingleInstance();
 const { handleMusicCommand } = require("./commands/music");
-const { handleJagaCommand, handleJagaVoiceStateUpdate } = require("./commands/jaga");
+const {
+    handleJagaCommand,
+    handleJagaVoiceStateUpdate,
+    startConfiguredJaga
+} = require("./commands/jaga");
 const { handleRandomCodeCommand } = require("./commands/buatcoderrandom");
 const { handlePlayMusicCommand } = require("./commands/playmusic");
 const { handleRulesCommand } = require("./commands/rules");
@@ -564,6 +568,9 @@ client.on("interactionCreate", async (interaction) => {
 
 client.once('ready', () => {
     console.log(`Client has been logged into! ${client.user.username}`);
+    startConfiguredJaga(client).catch(error => {
+        console.error("Failed to start configured !jaga voice connection:", error);
+    });
     registerHelpSlashCommand(client).catch(error => {
         console.error("Failed to register /help slash command:", error.message);
     });
