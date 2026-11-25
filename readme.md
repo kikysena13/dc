@@ -73,6 +73,7 @@ Untuk menyambung otomatis setelah Railway me-restart bot, isi `JAGA_CHANNEL_ID` 
 | `!rules`, `!rule` | Menampilkan peraturan server. `!rules help` menampilkan bantuan. |
 | `!roleml` | Menampilkan daftar role server dan deskripsinya. |
 | `!task`, `!tasks`, `!todo` | Menampilkan daftar tugas dan informasi profil. |
+| `!ban @member`, `!unban @member` | Blokir atau izinkan member masuk voice. Member yang diblokir otomatis dikeluarkan saat masuk. Membutuhkan izin Manage Server; bot memerlukan izin Move Members. |
 | `music`, `!music` | Menampilkan daftar lagu. |
 | `input`, `!input`, `format`, `!format` | Menampilkan contoh format data member manual. |
 | `list`, `!list` | Menampilkan daftar member manual dengan pagination. |

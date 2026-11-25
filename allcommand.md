@@ -29,6 +29,7 @@ Dokumentasi ini mengikuti command yang aktif di `index.js` dan folder `commands/
 | `!remove <nomor>` | Menghapus lagu tertentu dari queue. Lagu yang sedang diputar tidak dapat dihapus dengan command ini. |
 | `!clear` | Menghapus semua lagu berikutnya dan mempertahankan lagu yang sedang diputar. |
 | `!jaga` | Masuk ke voice channel kamu dan mengirim audio hening agar tetap aktif saat semua member keluar. |
+| `!ban @member` / `!unban @member` | Blokir atau izinkan member masuk voice. Member yang diblokir otomatis dikeluarkan saat masuk. Membutuhkan izin Manage Server; bot perlu izin Move Members. |
 | `!leave` / `!dc` / `!disconnect` | Membuat bot keluar dari voice channel. |
 | `!musichelp` / `!help music` | Menampilkan bantuan command musik. |
 

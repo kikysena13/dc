@@ -81,6 +81,7 @@ const { handleWebCommand } = require("./commands/web");
 const { handleWhellLeviCommand } = require("./commands/whellevi");
 const spendingPoints = require("./commands/whellevi");
 const { handleInputCommand } = require("./commands/input");
+const { handleVoiceBanCommand, handleBannedVoiceStateUpdate } = require("./commands/banned");
 const ARENA_PARTICIPANT_ROLE = "Punishing";
 const CHAT_XP_PER_MESSAGE = 1;
 const VOICE_XP_PER_MINUTE = 1;
@@ -547,6 +548,9 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     if (isDashboardGuild(newState.guild.id)) {
         recordVoiceStateChange(oldState, newState);
     }
+    handleBannedVoiceStateUpdate(oldState, newState).catch(error => {
+        console.error("Failed to enforce voice ban:", error);
+    });
     handleJagaVoiceStateUpdate(oldState, newState).catch(error => {
         console.error("Failed to maintain !jaga voice connection:", error);
     });
@@ -686,6 +690,7 @@ client.on('messageCreate', async (message) => {
 
     if (await handleStudyScheduleCommand(message)) return;
     if (await handleHelpCommand(message)) return;
+    if (await handleVoiceBanCommand(message)) return;
     if (await handleMusicCommand(message)) return;
     if (await handleJagaCommand(message)) return;
     if (await handleRandomCodeCommand(message)) return;
