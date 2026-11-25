@@ -7,6 +7,7 @@ const {
 
 const activeJagaChannels = new Map();
 const RECONNECT_DELAY_MS = 3000;
+const WATCHDOG_INTERVAL_MS = 15_000;
 
 function isActiveJaga(guildId, target) {
     return activeJagaChannels.get(guildId) === target;
@@ -29,6 +30,29 @@ function monitorConnection(guildId, target, connection) {
     connection.on(VoiceConnectionStatus.Disconnected, () => {
         scheduleReconnect(guildId, target);
     });
+}
+
+function startWatchdog(guildId, target) {
+    if (target.watchdog) clearInterval(target.watchdog);
+
+    target.watchdog = setInterval(() => {
+        if (!isActiveJaga(guildId, target) || target.reconnecting) {
+            return;
+        }
+
+        const connection = getVoiceConnection(guildId);
+        const voiceState = target.guild.voiceStates?.cache?.get(target.botUserId);
+        const connectionIsReady = connection
+            && connection.joinConfig.channelId === target.channelId
+            && connection.state.status === VoiceConnectionStatus.Ready;
+        const botIsInTargetChannel = voiceState?.channelId === target.channelId;
+
+        if (!connectionIsReady || !botIsInTargetChannel) {
+            reconnectJaga(guildId, target).catch(error => {
+                console.error("Failed to maintain !jaga voice connection:", error);
+            });
+        }
+    }, WATCHDOG_INTERVAL_MS);
 }
 
 async function reconnectJaga(guildId, target) {
@@ -72,6 +96,7 @@ function stopJaga(guildId) {
 
     activeJagaChannels.delete(guildId);
     if (target.reconnectTimer) clearTimeout(target.reconnectTimer);
+    if (target.watchdog) clearInterval(target.watchdog);
 }
 
 async function handleJagaVoiceStateUpdate(oldState, newState) {
@@ -122,6 +147,7 @@ async function handleJagaCommand(message) {
     const target = {
         channelId: voiceChannel.id,
         adapterCreator: message.guild.voiceAdapterCreator,
+        guild: message.guild,
         botUserId: message.client.user.id,
         connection: existingConnection,
         reconnectTimer: null,
@@ -131,6 +157,7 @@ async function handleJagaCommand(message) {
 
     if (existingConnection?.joinConfig.channelId === voiceChannel.id) {
         monitorConnection(message.guild.id, target, existingConnection);
+        startWatchdog(message.guild.id, target);
         await message.reply("✅ Bot sudah berada di voice channel dan akan tetap di sana.");
         return true;
     }
@@ -146,6 +173,7 @@ async function handleJagaCommand(message) {
         target.connection = connection;
         monitorConnection(message.guild.id, target, connection);
         await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+        startWatchdog(message.guild.id, target);
     } catch (error) {
         if (connection && connection !== existingConnection) {
             connection.destroy();

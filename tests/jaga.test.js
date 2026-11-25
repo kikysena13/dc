@@ -6,13 +6,24 @@ let joinOptions;
 let currentConnection;
 let joinCount = 0;
 let destroyCount = 0;
+const voiceStatesByGuild = new Map();
+const guildVoiceStates = new Map();
+const guild = {
+    id: "guild-1",
+    me: {},
+    voiceAdapterCreator: "adapter",
+    voiceStates: { cache: guildVoiceStates }
+};
+voiceStatesByGuild.set(guild.id, guildVoiceStates);
 const connection = {
     joinConfig: { channelId: "voice-1" },
+    state: { status: "ready" },
     on() {
         return this;
     },
     destroy() {
         destroyCount += 1;
+        this.state.status = "destroyed";
         currentConnection = null;
     }
 };
@@ -26,7 +37,9 @@ require.cache[voiceModulePath] = {
             joinOptions = options;
             joinCount += 1;
             connection.joinConfig = { channelId: options.channelId };
+            connection.state.status = "ready";
             currentConnection = connection;
+            voiceStatesByGuild.get(options.guildId)?.set("bot-1", { channelId: options.channelId });
             return connection;
         },
         VoiceConnectionStatus: { Ready: "ready", Disconnected: "disconnected" },
@@ -48,11 +61,7 @@ function createMessage(content, voiceChannel) {
     const replies = [];
     return {
         content,
-        guild: {
-            id: "guild-1",
-            me: {},
-            voiceAdapterCreator: "adapter"
-        },
+        guild,
         client: { user: { id: "bot-1" } },
         member: { voice: { channel: voiceChannel } },
         replies,
@@ -97,6 +106,7 @@ async function run() {
     assert.strictEqual(await handleJagaCommand(alreadyJoinedMessage), true);
     assert.match(alreadyJoinedMessage.replies[0], /sudah berada di voice channel/);
 
+    joinMessage.guild.voiceStates.cache.set("bot-1", { channelId: null });
     const botLeftVoice = {
         id: "bot-1",
         guild: { id: "guild-1" },
