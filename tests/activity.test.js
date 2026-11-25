@@ -10,9 +10,12 @@ const {
     getMemberActivity,
     getAllMemberActivities,
     recordChatMessage,
+    recordGuildMemberJoin,
     recordVoiceStateChange,
     initializeVoiceSessions,
-    finalizeVoiceSessions
+    finalizeVoiceSessions,
+    getMessageActivity,
+    getRecentDashboardActivity
 } = require("../commands/activity");
 
 const dataFile = process.env.ACTIVITY_DATA_FILE;
@@ -43,7 +46,14 @@ try {
     recordChatMessage({ id: "user1", username: "member" });
     recordChatMessage({ id: "user1", username: "member" });
     assert.strictEqual(readData().members.user1.chatMessages, 6, "identical chat messages must each count once");
-
+    assert.strictEqual(
+        getMessageActivity("24h").reduce((total, bucket) => total + bucket.value, 0),
+        2,
+        "message history should include newly recorded messages"
+    );
+    assert.ok(getRecentDashboardActivity().some(event => event.category === "message"));
+    recordGuildMemberJoin({ displayName: "New member", user: { username: "new-member" } });
+    assert.ok(getRecentDashboardActivity().some(event => event.category === "member"));
     initializeVoiceSessions(["user2"], now - 5 * 60_000);
     let data = readData();
     assert.deepStrictEqual(data.voiceSessions, { user2: new Date(now - 5 * 60_000).toISOString() });
