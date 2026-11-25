@@ -120,12 +120,13 @@ async function run() {
 
     joinMessage.guild.voiceStates.cache.set("bot-1", { channelId: null });
     connection.state.status = "disconnected";
-    const lastMemberLeftVoice = {
+    const botLeftVoice = {
         id: "bot-1",
         guild: { id: "guild-1" },
         channelId: null
     };
-    assert.strictEqual(await handleJagaVoiceStateUpdate({ channelId: "voice-1" }, lastMemberLeftVoice), true);
+    assert.strictEqual(await handleJagaVoiceStateUpdate({ channelId: "voice-1" }, botLeftVoice), true);
+    await new Promise(resolve => setTimeout(resolve, 3100));
     assert.strictEqual(joinCount, 2, "the bot should reconnect after leaving its protected voice channel");
 
     const leaveMessage = createMessage("!leave", channel);
@@ -146,7 +147,7 @@ async function run() {
     guildVoiceStates.delete("bot-1");
     assert.strictEqual(
         await handleJagaVoiceStateUpdate({ channelId: "voice-1" }, memberLeftVoice),
-        true
+        false
     );
     assert.strictEqual(
         joinCount,

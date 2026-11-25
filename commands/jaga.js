@@ -13,20 +13,28 @@ function isActiveJaga(guildId, target) {
     return activeJagaChannels.get(guildId) === target;
 }
 
-function scheduleReconnect(guildId, target) {
+function scheduleReconnect(guildId, target, force = false) {
+    if (force) target.forceReconnect = true;
     if (!isActiveJaga(guildId, target) || target.reconnecting || target.reconnectTimer) {
         return;
     }
 
     target.reconnectTimer = setTimeout(() => {
         target.reconnectTimer = null;
-        ensureJagaConnection(guildId, target).catch(error => {
+        const reconnect = target.forceReconnect ? reconnectJaga : ensureJagaConnection;
+        target.forceReconnect = false;
+        reconnect(guildId, target).catch(error => {
             console.error("Failed to reconnect !jaga voice connection:", error);
         });
     }, RECONNECT_DELAY_MS);
 }
 
 function monitorConnection(guildId, target, connection) {
+    connection.on("stateChange", (oldState, newState) => {
+        if (oldState.status !== newState.status) {
+            console.info(`[Jaga] Guild ${guildId}: voice ${oldState.status} -> ${newState.status}.`);
+        }
+    });
     connection.on(VoiceConnectionStatus.Disconnected, () => {
         console.warn(`[Jaga] Voice disconnected for guild ${guildId}; retrying.`);
         scheduleReconnect(guildId, target);
@@ -43,7 +51,12 @@ function isConnectionHealthy(guildId, target) {
 }
 
 async function ensureJagaConnection(guildId, target) {
-    if (isActiveJaga(guildId, target) && !target.reconnecting && !isConnectionHealthy(guildId, target)) {
+    if (
+        isActiveJaga(guildId, target)
+        && !target.reconnecting
+        && !target.reconnectTimer
+        && !isConnectionHealthy(guildId, target)
+    ) {
         await reconnectJaga(guildId, target);
     }
 }
@@ -94,7 +107,7 @@ async function reconnectJaga(guildId, target) {
         shouldRetry = true;
     } finally {
         target.reconnecting = false;
-        if (shouldRetry) scheduleReconnect(guildId, target);
+        if (shouldRetry || target.forceReconnect) scheduleReconnect(guildId, target);
     }
 }
 
@@ -113,15 +126,10 @@ async function handleJagaVoiceStateUpdate(oldState, newState) {
     if (!target) return false;
 
     const botLeftTarget = newState.id === target.botUserId && newState.channelId !== target.channelId;
-    const memberLeftTarget = oldState.channelId === target.channelId && newState.channelId !== target.channelId;
-    if (!botLeftTarget && !memberLeftTarget) return false;
+    if (!botLeftTarget) return false;
 
-    if (botLeftTarget) {
-        console.warn(`[Jaga] Bot left protected channel ${target.channelId} in guild ${guildId}.`);
-        await reconnectJaga(guildId, target);
-    } else {
-        await ensureJagaConnection(guildId, target);
-    }
+    console.warn(`[Jaga] Bot left protected channel ${target.channelId} in guild ${guildId}.`);
+    scheduleReconnect(guildId, target, true);
     return true;
 }
 
@@ -144,7 +152,8 @@ async function startJaga(guild, voiceChannel, botUserId) {
         botUserId,
         connection: existingConnection,
         reconnectTimer: null,
-        reconnecting: false
+        reconnecting: false,
+        forceReconnect: false
     };
     activeJagaChannels.set(guild.id, target);
 
