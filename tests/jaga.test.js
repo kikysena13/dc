@@ -107,13 +107,13 @@ async function run() {
     assert.match(alreadyJoinedMessage.replies[0], /sudah berada di voice channel/);
 
     joinMessage.guild.voiceStates.cache.set("bot-1", { channelId: null });
-    const botLeftVoice = {
-        id: "bot-1",
+    const lastMemberLeftVoice = {
+        id: "member-1",
         guild: { id: "guild-1" },
         channelId: null
     };
-    assert.strictEqual(await handleJagaVoiceStateUpdate({}, botLeftVoice), true);
-    assert.strictEqual(joinCount, 2, "the bot should rejoin after it leaves its protected voice channel");
+    assert.strictEqual(await handleJagaVoiceStateUpdate({ channelId: "voice-1" }, lastMemberLeftVoice), true);
+    assert.strictEqual(joinCount, 2, "the bot should reconnect when the last member leaves its protected voice channel");
 
     const leaveMessage = createMessage("!leave", channel);
     assert.strictEqual(await handlePlayMusicCommand(leaveMessage), true);

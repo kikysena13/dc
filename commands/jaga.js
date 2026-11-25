@@ -7,7 +7,7 @@ const {
 
 const activeJagaChannels = new Map();
 const RECONNECT_DELAY_MS = 3000;
-const WATCHDOG_INTERVAL_MS = 15_000;
+const WATCHDOG_INTERVAL_MS = 3000;
 
 function isActiveJaga(guildId, target) {
     return activeJagaChannels.get(guildId) === target;
@@ -20,7 +20,7 @@ function scheduleReconnect(guildId, target) {
 
     target.reconnectTimer = setTimeout(() => {
         target.reconnectTimer = null;
-        reconnectJaga(guildId, target).catch(error => {
+        ensureJagaConnection(guildId, target).catch(error => {
             console.error("Failed to reconnect !jaga voice connection:", error);
         });
     }, RECONNECT_DELAY_MS);
@@ -32,6 +32,23 @@ function monitorConnection(guildId, target, connection) {
     });
 }
 
+function isConnectionHealthy(guildId, target) {
+    const connection = getVoiceConnection(guildId);
+    const voiceState = target.guild.voiceStates?.cache?.get(target.botUserId);
+    return Boolean(
+        connection
+        && connection.joinConfig.channelId === target.channelId
+        && connection.state.status === VoiceConnectionStatus.Ready
+        && voiceState?.channelId === target.channelId
+    );
+}
+
+async function ensureJagaConnection(guildId, target) {
+    if (isActiveJaga(guildId, target) && !target.reconnecting && !isConnectionHealthy(guildId, target)) {
+        await reconnectJaga(guildId, target);
+    }
+}
+
 function startWatchdog(guildId, target) {
     if (target.watchdog) clearInterval(target.watchdog);
 
@@ -40,18 +57,9 @@ function startWatchdog(guildId, target) {
             return;
         }
 
-        const connection = getVoiceConnection(guildId);
-        const voiceState = target.guild.voiceStates?.cache?.get(target.botUserId);
-        const connectionIsReady = connection
-            && connection.joinConfig.channelId === target.channelId
-            && connection.state.status === VoiceConnectionStatus.Ready;
-        const botIsInTargetChannel = voiceState?.channelId === target.channelId;
-
-        if (!connectionIsReady || !botIsInTargetChannel) {
-            reconnectJaga(guildId, target).catch(error => {
-                console.error("Failed to maintain !jaga voice connection:", error);
-            });
-        }
+        ensureJagaConnection(guildId, target).catch(error => {
+            console.error("Failed to maintain !jaga voice connection:", error);
+        });
     }, WATCHDOG_INTERVAL_MS);
 }
 
@@ -102,11 +110,13 @@ function stopJaga(guildId) {
 async function handleJagaVoiceStateUpdate(oldState, newState) {
     const guildId = newState.guild.id;
     const target = activeJagaChannels.get(guildId);
-    if (!target || newState.id !== target.botUserId || newState.channelId === target.channelId) {
-        return false;
-    }
+    if (!target) return false;
 
-    await reconnectJaga(guildId, target);
+    const botLeftTarget = newState.id === target.botUserId && newState.channelId !== target.channelId;
+    const memberLeftTarget = oldState.channelId === target.channelId && newState.channelId !== target.channelId;
+    if (!botLeftTarget && !memberLeftTarget) return false;
+
+    await ensureJagaConnection(guildId, target);
     return true;
 }
 
