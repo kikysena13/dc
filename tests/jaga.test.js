@@ -4,11 +4,16 @@ const voiceModulePath = require.resolve("@discordjs/voice");
 const originalVoiceModule = require.cache[voiceModulePath];
 let joinOptions;
 let currentConnection;
+let joinCount = 0;
 let destroyCount = 0;
 const connection = {
     joinConfig: { channelId: "voice-1" },
+    on() {
+        return this;
+    },
     destroy() {
         destroyCount += 1;
+        currentConnection = null;
     }
 };
 
@@ -19,9 +24,12 @@ require.cache[voiceModulePath] = {
     exports: {
         joinVoiceChannel(options) {
             joinOptions = options;
+            joinCount += 1;
+            connection.joinConfig = { channelId: options.channelId };
+            currentConnection = connection;
             return connection;
         },
-        VoiceConnectionStatus: { Ready: "ready" },
+        VoiceConnectionStatus: { Ready: "ready", Disconnected: "disconnected" },
         async entersState(actualConnection, status, timeout) {
             assert.strictEqual(actualConnection, connection);
             assert.strictEqual(status, "ready");
@@ -33,7 +41,7 @@ require.cache[voiceModulePath] = {
     }
 };
 
-const { handleJagaCommand } = require("../commands/jaga");
+const { handleJagaCommand, handleJagaVoiceStateUpdate } = require("../commands/jaga");
 const { handlePlayMusicCommand } = require("../commands/playmusic");
 
 function createMessage(content, voiceChannel) {
@@ -45,7 +53,7 @@ function createMessage(content, voiceChannel) {
             me: {},
             voiceAdapterCreator: "adapter"
         },
-        client: { user: {} },
+        client: { user: { id: "bot-1" } },
         member: { voice: { channel: voiceChannel } },
         replies,
         async reply(text) {
@@ -81,6 +89,7 @@ async function run() {
         adapterCreator: "adapter",
         selfDeaf: true
     });
+    assert.strictEqual(joinCount, 1);
     assert.match(joinMessage.replies[0], /akan tetap di sana/);
 
     currentConnection = connection;
@@ -88,9 +97,17 @@ async function run() {
     assert.strictEqual(await handleJagaCommand(alreadyJoinedMessage), true);
     assert.match(alreadyJoinedMessage.replies[0], /sudah berada di voice channel/);
 
+    const botLeftVoice = {
+        id: "bot-1",
+        guild: { id: "guild-1" },
+        channelId: null
+    };
+    assert.strictEqual(await handleJagaVoiceStateUpdate({}, botLeftVoice), true);
+    assert.strictEqual(joinCount, 2, "the bot should rejoin after it leaves its protected voice channel");
+
     const leaveMessage = createMessage("!leave", channel);
     assert.strictEqual(await handlePlayMusicCommand(leaveMessage), true);
-    assert.strictEqual(destroyCount, 1, "!leave should disconnect an idle !jaga connection");
+    assert.strictEqual(destroyCount, 2, "!leave should disconnect an idle !jaga connection");
     assert.match(leaveMessage.replies[0], /Bot keluar dari voice channel/);
 
     console.log("Jaga command tests passed.");

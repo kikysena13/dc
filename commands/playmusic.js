@@ -12,6 +12,7 @@ const {
 } = require("@discordjs/voice");
 const play = require("play-dl");
 const SpotifyWebApi = require("spotify-web-api-node");
+const { stopJaga } = require("./jaga");
 
 // ===== SPOTIFY CONFIGURATION =====
 // Ganti dengan Spotify Client ID dan Secret Anda dari https://developer.spotify.com
@@ -930,6 +931,7 @@ async function handlePlayMusicCommand(message) {
     if (["!leave", "!dc", "!disconnect"].includes(command)) {
         const queue = getQueue(message.guild.id);
         const connection = queue.connection || getVoiceConnection(message.guild.id);
+        stopJaga(message.guild.id);
         if (connection) {
             connection.destroy();
             queues.delete(message.guild.id);

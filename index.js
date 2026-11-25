@@ -65,7 +65,7 @@ process.on("SIGINT", () => process.exit(0));
 process.on("SIGTERM", () => process.exit(0));
 ensureSingleInstance();
 const { handleMusicCommand } = require("./commands/music");
-const { handleJagaCommand } = require("./commands/jaga");
+const { handleJagaCommand, handleJagaVoiceStateUpdate } = require("./commands/jaga");
 const { handleRandomCodeCommand } = require("./commands/buatcoderrandom");
 const { handlePlayMusicCommand } = require("./commands/playmusic");
 const { handleRulesCommand } = require("./commands/rules");
@@ -543,6 +543,9 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     if (isDashboardGuild(newState.guild.id)) {
         recordVoiceStateChange(oldState, newState);
     }
+    handleJagaVoiceStateUpdate(oldState, newState).catch(error => {
+        console.error("Failed to maintain !jaga voice connection:", error);
+    });
 });
 
 client.on("interactionCreate", async (interaction) => {
