@@ -28,7 +28,7 @@ Dokumentasi ini mengikuti command yang aktif di `index.js` dan folder `commands/
 | `!shuffle` | Mengacak queue; membutuhkan minimal 3 lagu. |
 | `!remove <nomor>` | Menghapus lagu tertentu dari queue. Lagu yang sedang diputar tidak dapat dihapus dengan command ini. |
 | `!clear` | Menghapus semua lagu berikutnya dan mempertahankan lagu yang sedang diputar. |
-| `!jaga` | Masuk ke voice channel kamu dan tetap di sana meskipun semua member keluar. |
+| `!jaga` | Masuk ke voice channel kamu dan mengirim audio hening agar tetap aktif saat semua member keluar. |
 | `!leave` / `!dc` / `!disconnect` | Membuat bot keluar dari voice channel. |
 | `!musichelp` / `!help music` | Menampilkan bantuan command musik. |
 

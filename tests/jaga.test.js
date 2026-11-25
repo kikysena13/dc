@@ -6,6 +6,7 @@ let joinOptions;
 let currentConnection;
 let joinCount = 0;
 let destroyCount = 0;
+let createdPlayers = [];
 const voiceStatesByGuild = new Map();
 const guildVoiceStates = new Map();
 const guildChannels = new Map();
@@ -27,7 +28,7 @@ const channel = {
     name: "General",
     type: "GUILD_VOICE",
     permissionsFor() {
-        return { has: permission => permission === "CONNECT" };
+        return { has: permission => ["CONNECT", "SPEAK"].includes(permission) };
     }
 };
 guildChannels.set(channel.id, channel);
@@ -36,6 +37,10 @@ const connection = {
     state: { status: "ready" },
     on() {
         return this;
+    },
+    subscribe(player) {
+        this.subscriber = player;
+        return { player };
     },
     destroy() {
         destroyCount += 1;
@@ -59,6 +64,27 @@ require.cache[voiceModulePath] = {
             return connection;
         },
         VoiceConnectionStatus: { Ready: "ready", Disconnected: "disconnected" },
+        NoSubscriberBehavior: { Play: "play" },
+        StreamType: { Opus: "opus" },
+        createAudioPlayer() {
+            const player = {
+                stopped: false,
+                on() {
+                    return this;
+                },
+                play(resource) {
+                    this.resource = resource;
+                },
+                stop() {
+                    this.stopped = true;
+                }
+            };
+            createdPlayers.push(player);
+            return player;
+        },
+        createAudioResource(stream, options) {
+            return { stream, ...options };
+        },
         async entersState(actualConnection, status, timeout) {
             assert.strictEqual(actualConnection, connection);
             assert.strictEqual(status, "ready");
@@ -100,6 +126,16 @@ async function run() {
     assert.strictEqual(await handleJagaCommand(noVoiceMessage), true);
     assert.match(noVoiceMessage.replies[0], /harus masuk ke voice channel/);
 
+    const noSpeakChannel = {
+        ...channel,
+        permissionsFor() {
+            return { has: permission => permission === "CONNECT" };
+        }
+    };
+    const noSpeakMessage = createMessage("!jaga", noSpeakChannel);
+    assert.strictEqual(await handleJagaCommand(noSpeakMessage), true);
+    assert.match(noSpeakMessage.replies[0], /izin untuk mengirim audio/);
+
     currentConnection = null;
     joinOptions = null;
     const joinMessage = createMessage("!jaga", channel);
@@ -111,6 +147,7 @@ async function run() {
         selfDeaf: true
     });
     assert.strictEqual(joinCount, 1);
+    assert.strictEqual(connection.subscriber, createdPlayers[0], "jaga should stream silent keepalive audio");
     assert.match(joinMessage.replies[0], /akan tetap di sana/);
 
     currentConnection = connection;
@@ -132,6 +169,7 @@ async function run() {
     const leaveMessage = createMessage("!leave", channel);
     assert.strictEqual(await handlePlayMusicCommand(leaveMessage), true);
     assert.strictEqual(destroyCount, 2, "!leave should disconnect an idle !jaga connection");
+    assert.strictEqual(createdPlayers[0].stopped, true, "!leave should stop silent keepalive audio");
     assert.match(leaveMessage.replies[0], /Bot keluar dari voice channel/);
 
     currentConnection = connection;

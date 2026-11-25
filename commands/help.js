@@ -25,7 +25,7 @@ const HELP_PAGES = [
 		title: "🧰 Informasi & Utility",
 		description: [
 			"`!help` / `!commands` — Tampilkan daftar semua command bot.",
-			"`!jaga` — Masuk ke voice channel kamu dan tetap di sana setelah semua member keluar.",
+			"`!jaga` — Masuk ke voice channel dan mengirim audio hening agar tetap aktif saat semua member keluar.",
 			"`music` / `!music` — Daftar lagu.",
 			"`!randomcode [panjang] [jumlah] [tipe]` — Membuat kode acak; panjang 1–50, jumlah 1–10. Tipe: `alphanumeric`, `uppercase`, `lowercase`, `numbers`, `hex`.",
 			"`!randomcode help` — Bantuan generator kode. Alias: `!code`, `!gencode`, `!buatcode` (juga tersedia tanpa `!`).",

@@ -1,13 +1,26 @@
+const { Readable } = require("stream");
 const {
     joinVoiceChannel,
     VoiceConnectionStatus,
     entersState,
-    getVoiceConnection
+    getVoiceConnection,
+    createAudioPlayer,
+    createAudioResource,
+    NoSubscriberBehavior,
+    StreamType
 } = require("@discordjs/voice");
 
 const activeJagaChannels = new Map();
 const RECONNECT_DELAY_MS = 3000;
 const WATCHDOG_INTERVAL_MS = 3000;
+const SILENCE_FRAME = Buffer.from([0xF8, 0xFF, 0xFE]);
+
+async function* silenceFrames() {
+    while (true) {
+        yield SILENCE_FRAME;
+        await new Promise(resolve => setTimeout(resolve, 20));
+    }
+}
 
 function isActiveJaga(guildId, target) {
     return activeJagaChannels.get(guildId) === target;
@@ -39,6 +52,29 @@ function monitorConnection(guildId, target, connection) {
         console.warn(`[Jaga] Voice disconnected for guild ${guildId}; retrying.`);
         scheduleReconnect(guildId, target);
     });
+}
+
+function startSilenceKeepAlive(target, connection) {
+    stopSilenceKeepAlive(target);
+
+    const player = createAudioPlayer({
+        behaviors: { noSubscriber: NoSubscriberBehavior.Play }
+    });
+    player.on("error", error => {
+        console.error(`[Jaga] Silent keepalive audio failed in guild ${target.guild.id}:`, error);
+    });
+
+    player.play(createAudioResource(Readable.from(silenceFrames()), {
+        inputType: StreamType.Opus
+    }));
+    connection.subscribe(player);
+    target.silencePlayer = player;
+}
+
+function stopSilenceKeepAlive(target) {
+    if (!target.silencePlayer) return;
+    target.silencePlayer.stop(true);
+    target.silencePlayer = null;
 }
 
 function isConnectionHealthy(guildId, target) {
@@ -83,6 +119,7 @@ async function reconnectJaga(guildId, target) {
     target.reconnecting = true;
     let shouldRetry = false;
     try {
+        stopSilenceKeepAlive(target);
         const existingConnection = getVoiceConnection(guildId);
         if (existingConnection) {
             existingConnection.destroy();
@@ -97,6 +134,7 @@ async function reconnectJaga(guildId, target) {
         target.connection = connection;
         monitorConnection(guildId, target, connection);
         await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+        startSilenceKeepAlive(target, connection);
         console.info(`[Jaga] Reconnected to channel ${target.channelId} in guild ${guildId}.`);
     } catch (error) {
         if (target.connection) {
@@ -118,6 +156,7 @@ function stopJaga(guildId) {
     activeJagaChannels.delete(guildId);
     if (target.reconnectTimer) clearTimeout(target.reconnectTimer);
     if (target.watchdog) clearInterval(target.watchdog);
+    stopSilenceKeepAlive(target);
 }
 
 async function handleJagaVoiceStateUpdate(oldState, newState) {
@@ -159,6 +198,9 @@ async function startJaga(guild, voiceChannel, botUserId) {
 
     if (existingConnection?.joinConfig.channelId === voiceChannel.id) {
         monitorConnection(guild.id, target, existingConnection);
+        if (!existingConnection.state.subscription) {
+            startSilenceKeepAlive(target, existingConnection);
+        }
         startWatchdog(guild.id, target);
         console.info(`[Jaga] Protecting channel ${voiceChannel.id} in guild ${guild.id}.`);
         return false;
@@ -175,6 +217,7 @@ async function startJaga(guild, voiceChannel, botUserId) {
         target.connection = connection;
         monitorConnection(guild.id, target, connection);
         await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+        startSilenceKeepAlive(target, connection);
         startWatchdog(guild.id, target);
         console.info(`[Jaga] Connected to channel ${voiceChannel.id} in guild ${guild.id}.`);
         return true;
@@ -208,6 +251,9 @@ async function startConfiguredJaga(client) {
     if (!permissions?.has("CONNECT")) {
         throw new Error(`Bot does not have CONNECT permission for JAGA_CHANNEL_ID ${channelId}.`);
     }
+    if (!permissions.has("SPEAK")) {
+        throw new Error(`Bot does not have SPEAK permission for JAGA_CHANNEL_ID ${channelId}.`);
+    }
 
     await startJaga(guild, voiceChannel, client.user.id);
     return true;
@@ -232,6 +278,10 @@ async function handleJagaCommand(message) {
     const permissions = voiceChannel.permissionsFor(message.guild.me || message.client.user);
     if (!permissions?.has("CONNECT")) {
         await message.reply("❌ Bot tidak punya izin untuk masuk ke voice channel tersebut.");
+        return true;
+    }
+    if (!permissions.has("SPEAK")) {
+        await message.reply("❌ Bot tidak punya izin untuk mengirim audio di voice channel tersebut.");
         return true;
     }
 
