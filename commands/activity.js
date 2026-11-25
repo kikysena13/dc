@@ -2,6 +2,9 @@ const fs = require("fs");
 const path = require("path");
 
 const DATA_FILE = process.env.ACTIVITY_DATA_FILE || path.join(__dirname, "..", "data", "activity-points.json");
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const HISTORY_MS = 31 * DAY_MS;
 
 function normalizeCounter(value) {
     const number = Number(value);
@@ -14,10 +17,12 @@ function readActivity() {
         return {
             ...activity,
             members: activity.members && typeof activity.members === "object" ? activity.members : {},
-            voiceSessions: activity.voiceSessions && typeof activity.voiceSessions === "object" ? activity.voiceSessions : {}
+            voiceSessions: activity.voiceSessions && typeof activity.voiceSessions === "object" ? activity.voiceSessions : {},
+            hourlyMessages: activity.hourlyMessages && typeof activity.hourlyMessages === "object" ? activity.hourlyMessages : {},
+            events: Array.isArray(activity.events) ? activity.events : []
         };
     } catch (error) {
-        if (error.code === "ENOENT") return { members: {}, voiceSessions: {} };
+        if (error.code === "ENOENT") return { members: {}, voiceSessions: {}, hourlyMessages: {}, events: [] };
         throw error;
     }
 }
@@ -57,8 +62,19 @@ function getAllMemberActivities(now = Date.now()) {
     ]));
 }
 
-function recordChatMessage(user) {
+function addDashboardEvent(activity, category, summary, timestamp = Date.now()) {
+    activity.events.unshift({
+        id: `${timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+        category,
+        summary,
+        createdAt: new Date(timestamp).toISOString()
+    });
+    activity.events = activity.events.slice(0, 50);
+}
+
+function recordChatMessage(user, channelName = null) {
     const activity = readActivity();
+    const now = Date.now();
     const existingMember = activity.members[user.id] || {};
     const member = {
         ...existingMember,
@@ -66,8 +82,80 @@ function recordChatMessage(user) {
         chatMessages: normalizeCounter(existingMember.chatMessages) + 1,
         voiceMinutes: normalizeCounter(existingMember.voiceMinutes)
     };
-    member.lastChatAt = new Date().toISOString();
+    member.lastChatAt = new Date(now).toISOString();
     activity.members[user.id] = member;
+    const hourStart = Math.floor(now / HOUR_MS) * HOUR_MS;
+    const hourKey = new Date(hourStart).toISOString();
+    activity.hourlyMessages[hourKey] = normalizeCounter(activity.hourlyMessages[hourKey]) + 1;
+    for (const key of Object.keys(activity.hourlyMessages)) {
+        if (Date.parse(key) < now - HISTORY_MS) delete activity.hourlyMessages[key];
+    }
+    addDashboardEvent(
+        activity,
+        "message",
+        channelName ? `Message in #${channelName}` : "A new server message",
+        now,
+    );
+    writeActivity(activity);
+}
+
+function getMessageActivity(range, now = Date.now()) {
+    const activity = readActivity();
+    const sumBetween = (start, end) => Object.entries(activity.hourlyMessages).reduce((total, [key, value]) => {
+        const timestamp = Date.parse(key);
+        return timestamp >= start && timestamp < end ? total + normalizeCounter(value) : total;
+    }, 0);
+
+    if (range === "24h") {
+        const currentBlock = Math.floor(now / (4 * HOUR_MS)) * 4 * HOUR_MS;
+        const start = currentBlock - 5 * 4 * HOUR_MS;
+        return Array.from({ length: 6 }, (_, index) => {
+            const bucketStart = start + index * 4 * HOUR_MS;
+            return {
+                label: String(new Date(bucketStart).getUTCHours()).padStart(2, "0"),
+                value: sumBetween(bucketStart, bucketStart + 4 * HOUR_MS)
+            };
+        });
+    }
+
+    if (range === "7d") {
+        const today = Math.floor(now / DAY_MS) * DAY_MS;
+        const start = today - 6 * DAY_MS;
+        return Array.from({ length: 7 }, (_, index) => {
+            const bucketStart = start + index * DAY_MS;
+            const label = new Date(bucketStart).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+            return { label, value: sumBetween(bucketStart, bucketStart + DAY_MS) };
+        });
+    }
+
+    if (range === "30d") {
+        const today = Math.floor(now / DAY_MS) * DAY_MS;
+        const start = today - 29 * DAY_MS;
+        return Array.from({ length: 5 }, (_, index) => {
+            const bucketStart = start + index * 6 * DAY_MS;
+            const bucketEnd = Math.min(bucketStart + 6 * DAY_MS, today + DAY_MS);
+            const firstDay = Math.floor((bucketStart - start) / DAY_MS) + 1;
+            const lastDay = Math.floor((bucketEnd - start - 1) / DAY_MS) + 1;
+            return {
+                label: `${firstDay}-${lastDay}`,
+                value: sumBetween(bucketStart, bucketEnd)
+            };
+        });
+    }
+
+    return [];
+}
+
+function getRecentDashboardActivity(limit = 20) {
+    const activity = readActivity();
+    const safeLimit = Math.max(0, Math.min(50, Number(limit) || 0));
+    return activity.events.slice(0, safeLimit);
+}
+
+function recordGuildMemberJoin(member) {
+    const activity = readActivity();
+    const name = member.displayName || member.user?.globalName || member.user?.username || "A member";
+    addDashboardEvent(activity, "member", `${name} joined the server`);
     writeActivity(activity);
 }
 
@@ -95,8 +183,20 @@ function recordVoiceStateChange(oldState, newState) {
 
     const activity = readActivity();
     const now = Date.now();
+    const oldChannelName = oldState.channel?.name || "a voice channel";
+    const newChannelName = newState.channel?.name || "a voice channel";
     closeVoiceSession(activity, user.id, now);
     if (newState.channelId) activity.voiceSessions[user.id] = new Date(now).toISOString();
+    addDashboardEvent(
+        activity,
+        "voice",
+        newState.channelId
+            ? oldState.channelId
+                ? `Moved to ${newChannelName}`
+                : `Joined ${newChannelName}`
+            : `Left ${oldChannelName}`,
+        now,
+    );
     writeActivity(activity);
 }
 
@@ -121,6 +221,9 @@ module.exports = {
     getMemberActivity,
     getAllMemberActivities,
     recordChatMessage,
+    recordGuildMemberJoin,
+    getMessageActivity,
+    getRecentDashboardActivity,
     recordVoiceStateChange,
     initializeVoiceSessions,
     finalizeVoiceSessions

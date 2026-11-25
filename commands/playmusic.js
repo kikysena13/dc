@@ -929,8 +929,9 @@ async function handlePlayMusicCommand(message) {
     // Leave
     if (["!leave", "!dc", "!disconnect"].includes(command)) {
         const queue = getQueue(message.guild.id);
-        if (queue.connection) {
-            queue.connection.destroy();
+        const connection = queue.connection || getVoiceConnection(message.guild.id);
+        if (connection) {
+            connection.destroy();
             queues.delete(message.guild.id);
             message.reply("👋 Bot keluar dari voice channel!");
         } else {
