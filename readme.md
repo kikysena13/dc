@@ -54,6 +54,7 @@ Bot Discord untuk komunitas dengan fitur musik, AI chat, leaderboard aktivitas d
 | `!shuffle` | Mengacak antrean (minimal 3 lagu). |
 | `!remove <nomor>` | Menghapus lagu dari antrean, kecuali lagu yang sedang diputar. |
 | `!clear` | Menghapus lagu berikutnya dan mempertahankan lagu yang sedang diputar. |
+| `!jaga` | Masuk ke voice channel kamu dan tetap di sana meskipun semua member keluar. |
 | `!leave`, `!dc`, `!disconnect` | Membuat bot keluar dari voice channel. |
 
 Bot dan pengguna harus berada di voice channel yang sama. Untuk pencarian judul, bot mencoba Spotify terlebih dahulu lalu menggunakan YouTube jika tersedia.

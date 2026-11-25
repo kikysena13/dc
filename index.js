@@ -65,6 +65,7 @@ process.on("SIGINT", () => process.exit(0));
 process.on("SIGTERM", () => process.exit(0));
 ensureSingleInstance();
 const { handleMusicCommand } = require("./commands/music");
+const { handleJagaCommand } = require("./commands/jaga");
 const { handleRandomCodeCommand } = require("./commands/buatcoderrandom");
 const { handlePlayMusicCommand } = require("./commands/playmusic");
 const { handleRulesCommand } = require("./commands/rules");
@@ -676,6 +677,7 @@ client.on('messageCreate', async (message) => {
     if (await handleStudyScheduleCommand(message)) return;
     if (await handleHelpCommand(message)) return;
     if (await handleMusicCommand(message)) return;
+    if (await handleJagaCommand(message)) return;
     if (await handleRandomCodeCommand(message)) return;
     if (await handlePlayMusicCommand(message)) return;
     if (await handleRulesCommand(message)) return;
