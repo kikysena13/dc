@@ -32,7 +32,10 @@ const DEFAULT_DATA_FILE = path.join(__dirname, "..", "data", "voice-stay.json");
 const activeStayChannels = new Map();
 const monitoredConnections = new WeakMap();
 
-const BASE_RECONNECT_DELAY_MS = 3_000;
+const BASE_RECONNECT_DELAY_MS = 2_500;
+const DESTROY_SETTLE_DELAY_MS = 400;
+const MEMBER_LEAVE_VERIFY_DELAY_MS = 4_000;
+const REJOIN_TIMEOUT_MS = 8_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const WATCHDOG_INTERVAL_MS = 3_000;
 const STUCK_HANDSHAKE_TIMEOUT_MS = 15_000;
@@ -51,6 +54,7 @@ class SilenceStream extends Readable {
     }
 
     _read() {
+        if (this.destroyed) return;
         this.push(SILENCE_FRAME);
     }
 }
@@ -70,7 +74,11 @@ function readStayStore(filePath = getDataFilePath()) {
 }
 
 function queueStayGitHubPersistence(serializedData) {
-    if (!process.env.GITHUB_TOKEN) return Promise.resolve(false);
+    // Only push voice-stay.json to GitHub when explicitly enabled so !stay does not
+    // unexpectedly trigger a Railway auto-redeploy from a commit to main.
+    if (!process.env.GITHUB_TOKEN || process.env.STAY_GITHUB_SYNC !== "true") {
+        return Promise.resolve(false);
+    }
 
     githubSyncQueue = githubSyncQueue
         .then(async () => {
@@ -197,7 +205,10 @@ function monitorConnection(guildId, target, connection) {
         if (!currentTarget || !isActiveStayTarget(guildId, currentTarget)) return;
 
         if (oldState.status !== newState.status) {
-            console.info(`[Stay] Guild ${guildId}: voice ${oldState.status} -> ${newState.status}.`);
+            const detail = newState.status === STATUS_DISCONNECTED
+                ? ` (reason=${newState.reason ?? "unknown"}, closeCode=${newState.closeCode ?? "none"})`
+                : "";
+            console.info(`[Stay] Guild ${guildId}: voice ${oldState.status} -> ${newState.status}${detail}.`);
         }
 
         if (newState.status === STATUS_READY) {
@@ -208,11 +219,15 @@ function monitorConnection(guildId, target, connection) {
         }
     });
 
-    connection.on(STATUS_DISCONNECTED, () => {
+    connection.on(STATUS_DISCONNECTED, (oldState, newState) => {
         const currentTarget = monitoredConnections.get(connection);
         if (!currentTarget || !isActiveStayTarget(guildId, currentTarget)) return;
+        if (currentTarget.reconnecting) return;
 
-        console.warn(`[Stay] Voice disconnected for guild ${guildId}; scheduling reconnect.`);
+        const reason = newState?.reason ?? connection.state?.reason ?? "unknown";
+        const closeCode = newState?.closeCode ?? connection.state?.closeCode ?? "none";
+        currentTarget.lastDisconnectReason = `disconnected (reason=${reason}, closeCode=${closeCode})`;
+        console.warn(`[Stay] Voice disconnected for guild ${guildId} (${currentTarget.lastDisconnectReason}); scheduling reconnect.`);
         scheduleReconnect(guildId, currentTarget);
     });
 
@@ -222,6 +237,7 @@ function monitorConnection(guildId, target, connection) {
             if (!currentTarget || !isActiveStayTarget(guildId, currentTarget)) return;
             if (currentTarget.reconnecting) return;
 
+            currentTarget.lastDisconnectReason = "connection destroyed unexpectedly";
             console.warn(`[Stay] Voice connection unexpectedly destroyed for guild ${guildId}; rejoining.`);
             scheduleReconnect(guildId, currentTarget, true);
         });
@@ -229,6 +245,7 @@ function monitorConnection(guildId, target, connection) {
 
     connection.on("error", error => {
         const currentTarget = monitoredConnections.get(connection);
+        currentTarget && (currentTarget.lastError = error.message || String(error));
         console.error(`[Stay] Voice connection error in guild ${guildId}:`, error.message || error);
         if (currentTarget && isActiveStayTarget(guildId, currentTarget)) {
             scheduleReconnect(guildId, currentTarget);
@@ -268,6 +285,9 @@ function playSilenceResource(target, player) {
         }
     }
     const stream = new SilenceStream();
+    stream.on("error", error => {
+        console.error(`[Stay] Silent keepalive stream error in guild ${target.guild.id}:`, error.message || error);
+    });
     target.silenceStream = stream;
     player.play(createAudioResource(stream, {
         inputType: StreamType.Opus
@@ -443,22 +463,57 @@ async function reconnectStay(guildId, target) {
         await resolveFreshGuildAndChannel(target);
 
         const existingConnection = getVoiceConnection(guildId);
-        if (existingConnection) {
-            monitoredConnections.delete(existingConnection);
-            existingConnection.destroy();
+        let connection = null;
+
+        // First try in-place rejoin() when available so we avoid sending a gateway
+        // channel_id: null packet that can race with an immediate joinVoiceChannel().
+        if (
+            existingConnection
+            && existingConnection.joinConfig.channelId === target.channelId
+            && existingConnection.state.status !== STATUS_DESTROYED
+            && typeof existingConnection.rejoin === "function"
+        ) {
+            try {
+                const rejoined = existingConnection.rejoin({
+                    channelId: target.channelId,
+                    selfDeaf: true,
+                    selfMute: false
+                });
+                if (rejoined !== false) {
+                    monitorConnection(guildId, target, existingConnection);
+                    await entersState(existingConnection, STATUS_READY, REJOIN_TIMEOUT_MS);
+                    connection = existingConnection;
+                }
+            } catch (rejoinError) {
+                console.warn(`[Stay] In-place rejoin failed in guild ${guildId}; falling back to fresh join:`, rejoinError.message || rejoinError);
+            }
         }
 
-        const connection = joinVoiceChannel({
-            channelId: target.channelId,
-            guildId,
-            adapterCreator: target.adapterCreator,
-            selfDeaf: true
-        });
+        if (!connection) {
+            if (existingConnection && existingConnection.state.status !== STATUS_DESTROYED) {
+                monitoredConnections.delete(existingConnection);
+                existingConnection.destroy();
+                await new Promise(resolve => setTimeout(resolve, DESTROY_SETTLE_DELAY_MS));
+                if (!isActiveStayTarget(guildId, target)) {
+                    return;
+                }
+            }
+
+            connection = joinVoiceChannel({
+                channelId: target.channelId,
+                guildId,
+                adapterCreator: target.adapterCreator,
+                selfDeaf: true
+            });
+            target.connection = connection;
+            monitorConnection(guildId, target, connection);
+            await entersState(connection, STATUS_READY, 30_000);
+        }
+
         target.connection = connection;
-        monitorConnection(guildId, target, connection);
-        await entersState(connection, STATUS_READY, 30_000);
         target.unhealthySince = null;
         target.reconnectAttempts = 0;
+        target.lastError = null;
         target.reconnectCount = (target.reconnectCount || 0) + 1;
         target.lastConnectedAt = new Date().toISOString();
         if (!target.musicActive) {
@@ -467,6 +522,7 @@ async function reconnectStay(guildId, target) {
         console.info(`[Stay] Reconnected to channel ${target.channelId} in guild ${guildId}.`);
     } catch (error) {
         target.reconnectAttempts = (target.reconnectAttempts || 0) + 1;
+        target.lastError = error.message || String(error);
         if (target.connection) {
             try {
                 monitoredConnections.delete(target.connection);
@@ -492,6 +548,7 @@ function stopStay(guildId, options = {}) {
     if (target) {
         activeStayChannels.delete(guildId);
         if (target.reconnectTimer) clearTimeout(target.reconnectTimer);
+        if (target.memberLeaveVerifyTimer) clearTimeout(target.memberLeaveVerifyTimer);
         if (target.watchdog) clearInterval(target.watchdog);
         stopSilenceKeepAlive(target);
     }
@@ -508,11 +565,37 @@ async function handleStayVoiceStateUpdate(oldState, newState) {
     if (!target) return false;
 
     const botLeftTarget = newState.id === target.botUserId && newState.channelId !== target.channelId;
-    if (!botLeftTarget) return false;
+    if (botLeftTarget) {
+        // Ignore gateway echo from our own teardown while reconnectStay is actively running.
+        if (target.reconnecting) return false;
 
-    console.warn(`[Stay] Bot left/moved from protected channel ${target.channelId} in guild ${guildId}; rejoining.`);
-    scheduleReconnect(guildId, target, true);
-    return true;
+        target.lastDisconnectReason = newState.channelId
+            ? `moved to channel ${newState.channelId}`
+            : "bot voice state cleared (disconnected/kicked)";
+        console.warn(`[Stay] Bot left/moved from protected channel ${target.channelId} in guild ${guildId} (${target.lastDisconnectReason}); rejoining.`);
+        scheduleReconnect(guildId, target, true);
+        return true;
+    }
+
+    const memberLeftStayChannel = oldState?.channelId === target.channelId
+        && newState.channelId !== target.channelId
+        && newState.id !== target.botUserId;
+    if (memberLeftStayChannel) {
+        // Non-destructive follow-up check after a member leaves so if Discord drops
+        // the empty voice session a moment later, the bot recovers promptly.
+        if (target.memberLeaveVerifyTimer) {
+            clearTimeout(target.memberLeaveVerifyTimer);
+        }
+        target.memberLeaveVerifyTimer = setTimeout(() => {
+            target.memberLeaveVerifyTimer = null;
+            if (!isActiveStayTarget(guildId, target) || target.reconnecting) return;
+            ensureStayConnection(guildId, target).catch(error => {
+                console.error("[Stay] Post-member-leave verification failed:", error);
+            });
+        }, MEMBER_LEAVE_VERIFY_DELAY_MS);
+    }
+
+    return false;
 }
 
 function isSupportedVoiceChannel(channel) {
@@ -574,6 +657,7 @@ async function startStay(guild, voiceChannel, botUserId, options = {}) {
         lastConnectedAt: null,
         connection: existingConnection,
         reconnectTimer: null,
+        memberLeaveVerifyTimer: null,
         silenceRestartTimer: null,
         silencePlayer: null,
         silenceStream: null,
@@ -583,7 +667,9 @@ async function startStay(guild, voiceChannel, botUserId, options = {}) {
         musicActive: false,
         unhealthySince: null,
         reconnectAttempts: 0,
-        reconnectCount: 0
+        reconnectCount: 0,
+        lastDisconnectReason: null,
+        lastError: null
     };
     activeStayChannels.set(guild.id, target);
 
@@ -897,14 +983,22 @@ async function handleStayCommand(message) {
             ? `**${target.channelName}** (<#${target.channelId}>)`
             : `<#${target.channelId}>`;
 
-        await message.reply([
+        const lines = [
             "🟢 **Mode Stay 24/7: AKTIF (Selamanya)**",
             `• Voice Channel: ${channelLabel}`,
             `• Status Koneksi: \`${connStatus}\``,
             `• Aktif Selama: **${durationText}**`,
-            `• Total Auto-Reconnect: **${target.reconnectCount || 0}x**`,
-            "• Ketik `!stay off` atau `!unstay` jika ingin mematikan."
-        ].join("\n"));
+            `• Total Auto-Reconnect: **${target.reconnectCount || 0}x**`
+        ];
+        if (target.lastDisconnectReason) {
+            lines.push(`• Kejadian Putus Terakhir: \`${target.lastDisconnectReason}\``);
+        }
+        if (target.lastError) {
+            lines.push(`• Error Terakhir: \`${target.lastError}\``);
+        }
+        lines.push("• Ketik `!stay off` atau `!unstay` jika ingin mematikan.");
+
+        await message.reply(lines.join("\n"));
         return true;
     }
 

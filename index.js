@@ -168,10 +168,6 @@ const client = new Discord.Client({
         threads: {
             interval: 3600,
             lifetime: 1800
-        },
-        invites: {
-            interval: 3600,
-            lifetime: 1800
         }
     }
 });
