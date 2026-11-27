@@ -8,7 +8,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node tests/activity.test.js && node tests/jaga.test.js && node tests/banned.test.js"
+    "test": "node tests/activity.test.js && node tests/jaga.test.js && node tests/stay.test.js && node tests/banned.test.js && node tests/cacheCleaner.test.js"
   },
   "dependencies": {
     "@discordjs/voice": "^0.19.2",

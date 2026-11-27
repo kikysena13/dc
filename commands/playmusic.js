@@ -12,7 +12,17 @@ const {
 } = require("@discordjs/voice");
 const play = require("play-dl");
 const SpotifyWebApi = require("spotify-web-api-node");
-const { stopJaga } = require("./jaga");
+const {
+    stopStay,
+    isStayActive,
+    getStayTarget,
+    pauseStayForMusic,
+    resumeStayAfterMusic
+} = require("./stay");
+
+// Track connections that already have music lifecycle listeners attached so
+// reusing a long-lived 24/7 stay connection never leaks duplicate listeners.
+const attachedMusicConnections = new WeakSet();
 
 // ===== SPOTIFY CONFIGURATION =====
 // Ganti dengan Spotify Client ID dan Secret Anda dari https://developer.spotify.com
@@ -339,6 +349,11 @@ async function playSong(guildId, song) {
     const queue = getQueue(guildId);
     
     if (!song) {
+        if (isStayActive(guildId)) {
+            queues.delete(guildId);
+            resumeStayAfterMusic(guildId);
+            return;
+        }
         if (queue.connection) {
             queue.connection.destroy();
         }
@@ -450,6 +465,11 @@ async function searchAndPlay(message, query) {
     
     if (!voiceChannel) {
         return message.reply("❌ Kamu harus join voice channel dulu!");
+    }
+
+    const stayTarget = getStayTarget(message.guild.id);
+    if (stayTarget && stayTarget.channelId !== voiceChannel.id) {
+        return message.reply(`❌ Bot sedang aktif **Stay 24/7** di <#${stayTarget.channelId}>. Masuk ke channel tersebut untuk memutar musik, atau ketik \`!stay off\` terlebih dahulu.`);
     }
     
     const permissions = voiceChannel.permissionsFor(message.client.user);
@@ -662,31 +682,52 @@ async function searchAndPlay(message, query) {
 
 // Setup voice connection - DENGAN RETRY LOGIC
 async function setupConnection(message, voiceChannel) {
-    const queue = getQueue(message.guild.id);
+    const guildId = message.guild.id;
+    const queue = getQueue(guildId);
     
     try {
         console.log(`🎤 Attempting to connect to voice channel: ${voiceChannel.name}`);
+
+        const staying = isStayActive(guildId);
+        if (staying) {
+            pauseStayForMusic(guildId);
+        }
+
+        const existingConnection = getVoiceConnection(guildId);
+        const reuseExisting = Boolean(
+            existingConnection
+            && existingConnection.joinConfig.channelId === voiceChannel.id
+            && existingConnection.state.status === VoiceConnectionStatus.Ready
+        );
         
-        const connection = joinVoiceChannel({
-            channelId: voiceChannel.id,
-            guildId: message.guild.id,
-            adapterCreator: message.guild.voiceAdapterCreator,
-            selfDeaf: true
-        });
+        const connection = reuseExisting
+            ? existingConnection
+            : joinVoiceChannel({
+                channelId: voiceChannel.id,
+                guildId,
+                adapterCreator: message.guild.voiceAdapterCreator,
+                selfDeaf: true
+            });
         
         // Wait for connection to be ready dengan timeout
-        try {
-            await entersState(connection, VoiceConnectionStatus.Ready, 30000);
-            console.log('✅ Connected to voice channel');
-        } catch (error) {
-            console.error("Connection state error:", error.message);
-            connection.destroy();
-            
-            // Send error message safely
-            if (queue.textChannel) {
-                await queue.textChannel.send("❌ Gagal connect ke voice channel! Error: " + error.message).catch(() => {});
+        if (!reuseExisting) {
+            try {
+                await entersState(connection, VoiceConnectionStatus.Ready, 30000);
+                console.log('✅ Connected to voice channel');
+            } catch (error) {
+                console.error("Connection state error:", error.message);
+                if (staying) {
+                    resumeStayAfterMusic(guildId);
+                } else {
+                    connection.destroy();
+                }
+                
+                // Send error message safely
+                if (queue.textChannel) {
+                    await queue.textChannel.send("❌ Gagal connect ke voice channel! Error: " + error.message).catch(() => {});
+                }
+                throw new Error("Failed to connect to voice channel: " + error.message);
             }
-            throw new Error("Failed to connect to voice channel: " + error.message);
         }
         
         const player = createAudioPlayer({
@@ -696,46 +737,59 @@ async function setupConnection(message, voiceChannel) {
         });
         
         player.on(AudioPlayerStatus.Idle, () => {
-            if (queue.loop) {
-                playSong(message.guild.id, queue.songs[0]);
+            const currentQueue = queues.get(guildId);
+            if (!currentQueue || currentQueue.player !== player) return;
+            if (currentQueue.loop) {
+                playSong(guildId, currentQueue.songs[0]);
             } else {
-                if (queue.loopQueue && queue.songs.length > 0) {
-                    queue.songs.push(queue.songs.shift());
+                if (currentQueue.loopQueue && currentQueue.songs.length > 0) {
+                    currentQueue.songs.push(currentQueue.songs.shift());
                 } else {
-                    queue.songs.shift();
+                    currentQueue.songs.shift();
                 }
-                playSong(message.guild.id, queue.songs[0]);
+                playSong(guildId, currentQueue.songs[0]);
             }
         });
         
         player.on('error', error => {
             console.error('Player error:', error.message);
-            if (queue.textChannel) {
-                queue.textChannel.send(`❌ Audio player error: ${error.message}`).catch(() => {});
+            const currentQueue = queues.get(guildId);
+            if (currentQueue?.textChannel) {
+                currentQueue.textChannel.send(`❌ Audio player error: ${error.message}`).catch(() => {});
             }
         });
         
-        connection.on(VoiceConnectionStatus.Disconnected, async () => {
-            console.warn('⚠️ Voice connection disconnected, attempting to reconnect...');
-            try {
-                await Promise.race([
-                    entersState(connection, VoiceConnectionStatus.Signalling, 5000),
-                    entersState(connection, VoiceConnectionStatus.Connecting, 5000),
-                ]);
-            } catch (error) {
-                console.error('Reconnection failed:', error.message);
-                connection.destroy();
-                queues.delete(message.guild.id);
-                if (queue.textChannel) {
-                    await queue.textChannel.send("❌ Bot terputus dari voice channel dan tidak bisa reconnect.").catch(() => {});
-                }
-            }
-        });
+        if (!attachedMusicConnections.has(connection)) {
+            attachedMusicConnections.add(connection);
 
-        connection.on(VoiceConnectionStatus.Destroyed, () => {
-            console.log('🔴 Voice connection destroyed');
-            queues.delete(message.guild.id);
-        });
+            connection.on(VoiceConnectionStatus.Disconnected, async () => {
+                const currentQueue = queues.get(guildId);
+                if (!currentQueue) return;
+                console.warn('⚠️ Voice connection disconnected, attempting to reconnect...');
+                try {
+                    await Promise.race([
+                        entersState(connection, VoiceConnectionStatus.Signalling, 5000),
+                        entersState(connection, VoiceConnectionStatus.Connecting, 5000),
+                    ]);
+                } catch (error) {
+                    console.error('Reconnection failed:', error.message);
+                    queues.delete(guildId);
+                    if (isStayActive(guildId)) {
+                        resumeStayAfterMusic(guildId);
+                    } else {
+                        connection.destroy();
+                        if (currentQueue.textChannel) {
+                            await currentQueue.textChannel.send("❌ Bot terputus dari voice channel dan tidak bisa reconnect.").catch(() => {});
+                        }
+                    }
+                }
+            });
+
+            connection.on(VoiceConnectionStatus.Destroyed, () => {
+                console.log('🔴 Voice connection destroyed');
+                queues.delete(guildId);
+            });
+        }
         
         connection.subscribe(player);
         
@@ -778,7 +832,7 @@ function createMusicHelpEmbed() {
             },
             { 
                 name: "🔀 Other", 
-                value: "`!shuffle` - Acak urutan queue\n`!remove <nomor>` - Hapus lagu dari queue\n`!clear` - Hapus semua queue\n`!leave` / `!dc` - Bot keluar dari voice" 
+                value: "`!shuffle` - Acak urutan queue\n`!remove <nomor>` - Hapus lagu dari queue\n`!clear` - Hapus semua queue\n`!stay` / `stay` - Stay di voice 24/7 selamanya\n`!stay status` - Cek status stay 24/7\n`!stay off` / `!unstay` - Matikan stay & keluar\n`!leave` / `!dc` - Bot keluar dari voice" 
             }
         )
         .setFooter({ text: "🎧 Enjoy the music! | Support Spotify & YouTube" });
@@ -839,10 +893,16 @@ async function handlePlayMusicCommand(message) {
         const queue = getQueue(message.guild.id);
         if (queue.connection) {
             queue.songs = [];
-            queue.player.stop();
-            queue.connection.destroy();
-            queues.delete(message.guild.id);
-            message.reply("⏹️ Musik dihentikan dan queue dihapus!");
+            queue.player?.stop();
+            if (isStayActive(message.guild.id)) {
+                queues.delete(message.guild.id);
+                resumeStayAfterMusic(message.guild.id);
+                message.reply("⏹️ Musik dihentikan dan queue dihapus! Bot tetap stay 24/7 di voice channel.");
+            } else {
+                queue.connection.destroy();
+                queues.delete(message.guild.id);
+                message.reply("⏹️ Musik dihentikan dan queue dihapus!");
+            }
         } else {
             message.reply("❌ Bot tidak sedang di voice channel!");
         }
@@ -931,11 +991,16 @@ async function handlePlayMusicCommand(message) {
     if (["!leave", "!dc", "!disconnect"].includes(command)) {
         const queue = getQueue(message.guild.id);
         const connection = queue.connection || getVoiceConnection(message.guild.id);
-        stopJaga(message.guild.id);
+        const wasStaying = stopStay(message.guild.id, { persist: true });
         if (connection) {
             connection.destroy();
             queues.delete(message.guild.id);
-            message.reply("👋 Bot keluar dari voice channel!");
+            message.reply(wasStaying
+                ? "👋 Mode stay 24/7 dimatikan. Bot keluar dari voice channel!"
+                : "👋 Bot keluar dari voice channel!");
+        } else if (wasStaying) {
+            queues.delete(message.guild.id);
+            message.reply("👋 Mode stay 24/7 dimatikan. Bot keluar dari voice channel!");
         } else {
             message.reply("❌ Bot tidak sedang di voice channel!");
         }
@@ -951,7 +1016,35 @@ async function handlePlayMusicCommand(message) {
     return false;
 }
 
+function cleanupMusicCache(options = {}) {
+    const { resetSpotifyAuth = false, now = Date.now() } = options;
+    let clearedQueues = 0;
+
+    for (const [guildId, queue] of queues.entries()) {
+        const isIdleEmpty = !queue.playing && queue.songs.length === 0 && !queue.connection;
+        if (isIdleEmpty) {
+            queues.delete(guildId);
+            clearedQueues += 1;
+        }
+    }
+
+    let clearedSpotifyToken = false;
+    if (resetSpotifyAuth || (spotifyTokenExpiresAt && now >= spotifyTokenExpiresAt)) {
+        if (spotifyAccessToken || spotifyTokenExpiresAt || spotifyAuthFailed) {
+            clearedSpotifyToken = true;
+        }
+        spotifyAccessToken = null;
+        spotifyTokenExpiresAt = null;
+        if (resetSpotifyAuth) {
+            spotifyAuthFailed = false;
+        }
+    }
+
+    return { clearedQueues, clearedSpotifyToken };
+}
+
 module.exports = {
     handlePlayMusicCommand,
-    getQueue
+    getQueue,
+    cleanupMusicCache
 };

@@ -25,7 +25,8 @@ const HELP_PAGES = [
 		title: "🧰 Informasi & Utility",
 		description: [
 			"`!help` / `!commands` — Tampilkan daftar semua command bot.",
-			"`!jaga` — Masuk ke voice channel dan mengirim audio hening agar tetap aktif saat semua member keluar.",
+			"`!stay` / `stay` (alias: `!jaga`) — Stay 24/7 di voice channel selamanya (auto-reconnect & auto-rejoin setelah restart). Mendukung `!stay <#channel|ID>`, `!stay status`, dan `!stay off` / `!unstay`.",
+			"`!clearcache` / `!clearcache all` — Bersihkan cache RAM bot (pesan, AI chat, queue idle). Memerlukan izin **Manage Server**.",
 			"`!ban @member` / `!unban @member` — Blokir atau izinkan member masuk voice (Manage Server; bot perlu Move Members).",
 			"`music` / `!music` — Daftar lagu.",
 			"`!randomcode [panjang] [jumlah] [tipe]` — Membuat kode acak; panjang 1–50, jumlah 1–10. Tipe: `alphanumeric`, `uppercase`, `lowercase`, `numbers`, `hex`.",

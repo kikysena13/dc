@@ -3,11 +3,65 @@ const { MessageEmbed } = require("discord.js");
 const MAX_PROMPT_LENGTH = 2000;
 const MAX_REPLY_LENGTH = 3900;
 const MAX_HISTORY_MESSAGES = 12;
+const MAX_CONVERSATIONS = 500;
+const CONVERSATION_TTL_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 // Riwayat disimpan per user dan channel supaya percakapan antar-user tidak tercampur.
 const conversations = new Map();
 const pendingConversations = new Map();
+
+function getActiveConversationMessages(conversationKey, now = Date.now()) {
+    const entry = conversations.get(conversationKey);
+    if (!entry) return [];
+    if (now - entry.updatedAt > CONVERSATION_TTL_MS) {
+        conversations.delete(conversationKey);
+        return [];
+    }
+    return entry.messages;
+}
+
+function saveConversationMessages(conversationKey, messages, now = Date.now()) {
+    if (conversations.has(conversationKey)) {
+        conversations.delete(conversationKey);
+    }
+    conversations.set(conversationKey, {
+        messages: messages.slice(-MAX_HISTORY_MESSAGES),
+        updatedAt: now
+    });
+
+    while (conversations.size > MAX_CONVERSATIONS) {
+        const oldestKey = conversations.keys().next().value;
+        if (oldestKey === undefined) break;
+        conversations.delete(oldestKey);
+    }
+}
+
+function cleanupAIChatCache(options = {}) {
+    const { forceAll = false, now = Date.now(), ttlMs = CONVERSATION_TTL_MS } = options;
+    let cleared = 0;
+
+    if (forceAll) {
+        cleared = conversations.size;
+        conversations.clear();
+        return cleared;
+    }
+
+    for (const [key, entry] of conversations.entries()) {
+        if (!entry || now - entry.updatedAt > ttlMs) {
+            conversations.delete(key);
+            cleared += 1;
+        }
+    }
+    return cleared;
+}
+
+function getAIChatCacheStats() {
+    return {
+        activeSessions: conversations.size,
+        pendingRequests: pendingConversations.size
+    };
+}
 
 function isConfiguredKey(value) {
     return typeof value === "string"
@@ -99,7 +153,7 @@ async function generateAIResponse(message, query) {
     const currentRequest = previousRequest.then(async () => {
         await message.channel.sendTyping();
 
-        const history = conversations.get(conversationKey) || [];
+        const history = getActiveConversationMessages(conversationKey);
         const prompt = query.slice(0, MAX_PROMPT_LENGTH);
         const contents = [
             ...history,
@@ -108,10 +162,10 @@ async function generateAIResponse(message, query) {
         const response = formatMathForDiscord(await requestGemini(config, contents));
 
         // Simpan pesan user dan jawaban AI hanya setelah request berhasil.
-        conversations.set(conversationKey, [
+        saveConversationMessages(conversationKey, [
             ...contents,
             { role: "model", parts: [{ text: response }] }
-        ].slice(-MAX_HISTORY_MESSAGES));
+        ]);
 
         const chunks = splitReply(response);
         await message.reply({ embeds: [createResponseEmbed(chunks.shift())] });
@@ -173,4 +227,10 @@ async function handleAIMention(message, clientUser) {
     return true;
 }
 
-module.exports = { handleAIChatCommand, handleAIChatReply, handleAIMention };
+module.exports = {
+    handleAIChatCommand,
+    handleAIChatReply,
+    handleAIMention,
+    cleanupAIChatCache,
+    getAIChatCacheStats
+};

@@ -1,4 +1,4 @@
-﻿# Daftar Semua Command Bot
+# Daftar Semua Command Bot
 
 Dokumentasi ini mengikuti command yang aktif di `index.js` dan folder `commands/`.
 
@@ -28,8 +28,10 @@ Dokumentasi ini mengikuti command yang aktif di `index.js` dan folder `commands/
 | `!shuffle` | Mengacak queue; membutuhkan minimal 3 lagu. |
 | `!remove <nomor>` | Menghapus lagu tertentu dari queue. Lagu yang sedang diputar tidak dapat dihapus dengan command ini. |
 | `!clear` | Menghapus semua lagu berikutnya dan mempertahankan lagu yang sedang diputar. |
-| `!jaga` | Masuk ke voice channel kamu dan mengirim audio hening agar tetap aktif saat semua member keluar. |
+| `!stay` / `stay` | Masuk ke voice channel dan stay 24/7 selamanya (auto-reconnect, audio hening keepalive, dan auto-rejoin setelah bot restart). Mendukung `!stay <#channel/ID>`, `!stay status`, dan `!stay off` / `!unstay`. |
+| `!jaga` | Alias untuk `!stay`. |
 | `!ban @member` / `!unban @member` | Blokir atau izinkan member masuk voice. Member yang diblokir otomatis dikeluarkan saat masuk. Membutuhkan izin Manage Server; bot perlu izin Move Members. |
+| `!clearcache` / `!clearcache all` | Bersihkan cache RAM bot secara manual (cache pesan, riwayat AI Chat, dan queue musik idle). Membutuhkan izin Manage Server. Alias: `!cleancache`. |
 | `!leave` / `!dc` / `!disconnect` | Membuat bot keluar dari voice channel. |
 | `!musichelp` / `!help music` | Menampilkan bantuan command musik. |
 

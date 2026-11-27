@@ -54,12 +54,12 @@ Bot Discord untuk komunitas dengan fitur musik, AI chat, leaderboard aktivitas d
 | `!shuffle` | Mengacak antrean (minimal 3 lagu). |
 | `!remove <nomor>` | Menghapus lagu dari antrean, kecuali lagu yang sedang diputar. |
 | `!clear` | Menghapus lagu berikutnya dan mempertahankan lagu yang sedang diputar. |
-| `!jaga` | Masuk ke voice channel kamu dan mengirim audio hening agar tetap aktif saat semua member keluar. |
-| `!leave`, `!dc`, `!disconnect` | Membuat bot keluar dari voice channel. |
+| `!stay`, `stay` | Masuk ke voice channel dan stay 24/7 selamanya (auto-reconnect, tahan channel kosong, dan auto-rejoin setelah bot restart). Mendukung `!stay <#channel/ID>`, `!stay status`, `!stay off` / `!unstay`. |
+| `!jaga` | Alias untuk `!stay`. |
+| `!leave`, `!dc`, `!disconnect` | Mematikan mode stay 24/7 (jika aktif) dan membuat bot keluar dari voice channel. |
 
 Bot dan pengguna harus berada di voice channel yang sama. Untuk pencarian judul, bot mencoba Spotify terlebih dahulu lalu menggunakan YouTube jika tersedia.
-`!jaga` membutuhkan izin **Connect** dan **Speak** di voice channel.
-Untuk menyambung otomatis setelah Railway me-restart bot, isi `JAGA_CHANNEL_ID` di Railway Variables dengan ID voice channel. `JAGA_GUILD_ID` opsional jika `DISCORD_GUILD_ID` sudah diatur.
+`!stay` / `!jaga` membutuhkan izin **Connect** dan **Speak** di voice channel. Target voice channel disimpan otomatis di `data/voice-stay.json` (dan disinkronkan ke GitHub jika `GITHUB_TOKEN` diatur). Kamu juga bisa mengisi `STAY_CHANNEL_ID` (atau `JAGA_CHANNEL_ID`) di Railway Variables sebagai fallback permanen. `STAY_GUILD_ID` / `JAGA_GUILD_ID` opsional jika `DISCORD_GUILD_ID` sudah diatur.
 
 ### 🧰 Informasi dan utility
 
@@ -74,6 +74,7 @@ Untuk menyambung otomatis setelah Railway me-restart bot, isi `JAGA_CHANNEL_ID` 
 | `!roleml` | Menampilkan daftar role server dan deskripsinya. |
 | `!task`, `!tasks`, `!todo` | Menampilkan daftar tugas dan informasi profil. |
 | `!ban @member`, `!unban @member` | Blokir atau izinkan member masuk voice. Member yang diblokir otomatis dikeluarkan saat masuk. Membutuhkan izin Manage Server; bot memerlukan izin Move Members. |
+| `!clearcache`, `!clearcache all` | Bersihkan cache RAM bot secara manual (pesan Discord, sesi AI Chat kadaluarsa/semua, dan queue musik idle). Membutuhkan izin Manage Server. Alias: `!cleancache`. |
 | `music`, `!music` | Menampilkan daftar lagu. |
 | `input`, `!input`, `format`, `!format` | Menampilkan contoh format data member manual. |
 | `list`, `!list` | Menampilkan daftar member manual dengan pagination. |

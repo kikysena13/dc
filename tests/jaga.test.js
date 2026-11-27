@@ -1,7 +1,21 @@
 const assert = require("assert");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const Module = require("module");
 
-const voiceModulePath = require.resolve("@discordjs/voice");
-const originalVoiceModule = require.cache[voiceModulePath];
+const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "reysie-jaga-test-"));
+process.env.STAY_DATA_FILE = path.join(tempDirectory, "voice-stay.json");
+
+let voiceModulePath = null;
+let originalVoiceModule = null;
+try {
+    voiceModulePath = require.resolve("@discordjs/voice");
+    originalVoiceModule = require.cache[voiceModulePath];
+} catch (error) {
+    // Allow tests to run even when node_modules is not installed locally.
+}
+const originalModuleLoad = Module._load;
 let joinOptions;
 let currentConnection;
 let joinCount = 0;
@@ -49,52 +63,79 @@ const connection = {
     }
 };
 
-require.cache[voiceModulePath] = {
-    id: voiceModulePath,
-    filename: voiceModulePath,
-    loaded: true,
-    exports: {
-        joinVoiceChannel(options) {
-            joinOptions = options;
-            joinCount += 1;
-            connection.joinConfig = { channelId: options.channelId };
-            connection.state.status = "ready";
-            currentConnection = connection;
-            voiceStatesByGuild.get(options.guildId)?.set("bot-1", { channelId: options.channelId });
-            return connection;
-        },
-        VoiceConnectionStatus: { Ready: "ready", Disconnected: "disconnected" },
-        NoSubscriberBehavior: { Play: "play" },
-        StreamType: { Opus: "opus" },
-        createAudioPlayer() {
-            const player = {
-                stopped: false,
-                on() {
-                    return this;
-                },
-                play(resource) {
-                    this.resource = resource;
-                },
-                stop() {
-                    this.stopped = true;
-                }
-            };
-            createdPlayers.push(player);
-            return player;
-        },
-        createAudioResource(stream, options) {
-            return { stream, ...options };
-        },
-        async entersState(actualConnection, status, timeout) {
-            assert.strictEqual(actualConnection, connection);
-            assert.strictEqual(status, "ready");
-            assert.strictEqual(timeout, 30_000);
-        },
-        getVoiceConnection() {
-            return currentConnection;
-        }
+const mockedVoiceExports = {
+    joinVoiceChannel(options) {
+        joinOptions = options;
+        joinCount += 1;
+        connection.joinConfig = { channelId: options.channelId };
+        connection.state.status = "ready";
+        currentConnection = connection;
+        voiceStatesByGuild.get(options.guildId)?.set("bot-1", { channelId: options.channelId });
+        return connection;
+    },
+    VoiceConnectionStatus: { Ready: "ready", Disconnected: "disconnected" },
+    NoSubscriberBehavior: { Play: "play" },
+    StreamType: { Opus: "opus" },
+    createAudioPlayer() {
+        const player = {
+            stopped: false,
+            on() {
+                return this;
+            },
+            play(resource) {
+                this.resource = resource;
+            },
+            stop() {
+                this.stopped = true;
+            }
+        };
+        createdPlayers.push(player);
+        return player;
+    },
+    createAudioResource(stream, options) {
+        return { stream, ...options };
+    },
+    async entersState(actualConnection, status, timeout) {
+        assert.strictEqual(actualConnection, connection);
+        assert.strictEqual(status, "ready");
+        assert.strictEqual(timeout, 30_000);
+    },
+    getVoiceConnection() {
+        return currentConnection;
     }
 };
+
+if (voiceModulePath) {
+    require.cache[voiceModulePath] = {
+        id: voiceModulePath,
+        filename: voiceModulePath,
+        loaded: true,
+        exports: mockedVoiceExports
+    };
+} else {
+    Module._load = function patchedLoad(request, parent, isMain) {
+        if (request === "@discordjs/voice") return mockedVoiceExports;
+        if (request === "discord.js") {
+            return {
+                MessageEmbed: class MessageEmbed {
+                    setColor() { return this; }
+                    setTitle() { return this; }
+                    setDescription() { return this; }
+                    setThumbnail() { return this; }
+                    addFields() { return this; }
+                    setFooter() { return this; }
+                }
+            };
+        }
+        if (request === "play-dl") return {};
+        if (request === "spotify-web-api-node") {
+            return class SpotifyWebApi {
+                setAccessToken() {}
+            };
+        }
+        return originalModuleLoad.call(this, request, parent, isMain);
+    };
+}
 
 const {
     handleJagaCommand,
@@ -229,9 +270,13 @@ run()
         process.exitCode = 1;
     })
     .finally(() => {
-        if (originalVoiceModule) {
-            require.cache[voiceModulePath] = originalVoiceModule;
-        } else {
-            delete require.cache[voiceModulePath];
+        Module._load = originalModuleLoad;
+        if (voiceModulePath) {
+            if (originalVoiceModule) {
+                require.cache[voiceModulePath] = originalVoiceModule;
+            } else {
+                delete require.cache[voiceModulePath];
+            }
         }
+        fs.rmSync(tempDirectory, { recursive: true, force: true });
     });

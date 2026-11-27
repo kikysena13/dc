@@ -55,6 +55,7 @@ function ensureSingleInstance() {
 
 process.on("exit", () => {
     try {
+        stopCacheCleanupScheduler();
         finalizeVoiceSessions();
     } catch (error) {
         console.error("Failed to save voice activity during shutdown:", error);
@@ -66,10 +67,11 @@ process.on("SIGTERM", () => process.exit(0));
 ensureSingleInstance();
 const { handleMusicCommand } = require("./commands/music");
 const {
-    handleJagaCommand,
-    handleJagaVoiceStateUpdate,
-    startConfiguredJaga
-} = require("./commands/jaga");
+    handleStayCommand,
+    handleStayVoiceStateUpdate,
+    restoreStayConnections,
+    reconcileStayConnections
+} = require("./commands/stay");
 const { handleRandomCodeCommand } = require("./commands/buatcoderrandom");
 const { handlePlayMusicCommand } = require("./commands/playmusic");
 const { handleRulesCommand } = require("./commands/rules");
@@ -82,6 +84,11 @@ const { handleWhellLeviCommand } = require("./commands/whellevi");
 const spendingPoints = require("./commands/whellevi");
 const { handleInputCommand } = require("./commands/input");
 const { handleVoiceBanCommand, handleBannedVoiceStateUpdate } = require("./commands/banned");
+const {
+    handleClearCacheCommand,
+    startCacheCleanupScheduler,
+    stopCacheCleanupScheduler
+} = require("./commands/cacheCleaner");
 const ARENA_PARTICIPANT_ROLE = "Punishing";
 const CHAT_XP_PER_MESSAGE = 1;
 const VOICE_XP_PER_MINUTE = 1;
@@ -98,6 +105,22 @@ function markMessageProcessed(message) {
     }, 3000);
 }
 
+function cleanupProcessedMessageIds(forceAll = false, now = Date.now()) {
+    let cleared = 0;
+    if (forceAll) {
+        cleared = processedMessageIds.size;
+        processedMessageIds.clear();
+        return cleared;
+    }
+    for (const [id, timestamp] of processedMessageIds.entries()) {
+        if (now - timestamp > 10_000) {
+            processedMessageIds.delete(id);
+            cleared += 1;
+        }
+    }
+    return cleared;
+}
+
 // ===== GLOBAL ERROR HANDLERS =====
 process.on('uncaughtException', (error) => {
     console.error('❌ Uncaught Exception:', error);
@@ -109,6 +132,14 @@ process.on('unhandledRejection', (reason, promise) => {
     // Bot akan continue running instead of crashing
 });
 
+const presenceEnabled = process.env.DISCORD_PRESENCE_ENABLED === "true";
+const defaultMakeCacheSettings = Discord.Options.defaultMakeCacheSettings
+    || Discord.Options.DefaultMakeCacheSettings
+    || {};
+const defaultSweeperSettings = Discord.Options.defaultSweeperSettings
+    || Discord.Options.DefaultSweeperSettings
+    || {};
+
 const client = new Discord.Client({
     intents: [
         "GUILDS", 
@@ -116,9 +147,33 @@ const client = new Discord.Client({
         "GUILD_MEMBERS", 
         "MESSAGE_CONTENT",
         "GUILD_VOICE_STATES",
-        ...(process.env.DISCORD_PRESENCE_ENABLED === "true" ? ["GUILD_PRESENCES"] : [])
+        ...(presenceEnabled ? ["GUILD_PRESENCES"] : [])
     ],
-    partials: ["CHANNEL", "MESSAGE"]
+    partials: ["CHANNEL", "MESSAGE"],
+    makeCache: Discord.Options.cacheWithLimits({
+        ...defaultMakeCacheSettings,
+        MessageManager: 50,
+        ReactionManager: 0,
+        ReactionUserManager: 0,
+        GuildInviteManager: 0,
+        ThreadMemberManager: 0,
+        ...(presenceEnabled ? {} : { PresenceManager: 0 })
+    }),
+    sweepers: {
+        ...defaultSweeperSettings,
+        messages: {
+            interval: 1800,
+            lifetime: 900
+        },
+        threads: {
+            interval: 3600,
+            lifetime: 1800
+        },
+        invites: {
+            interval: 3600,
+            lifetime: 1800
+        }
+    }
 });
 
 // Add manual members here. You can set IGN manually in each object.
@@ -551,8 +606,8 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     handleBannedVoiceStateUpdate(oldState, newState).catch(error => {
         console.error("Failed to enforce voice ban:", error);
     });
-    handleJagaVoiceStateUpdate(oldState, newState).catch(error => {
-        console.error("Failed to maintain !jaga voice connection:", error);
+    handleStayVoiceStateUpdate(oldState, newState).catch(error => {
+        console.error("Failed to maintain 24/7 stay voice connection:", error);
     });
 });
 
@@ -570,10 +625,21 @@ client.on("interactionCreate", async (interaction) => {
     }
 });
 
+client.on('shardResume', () => {
+    reconcileStayConnections(client);
+});
+
+client.on('shardReady', () => {
+    reconcileStayConnections(client);
+});
+
 client.once('ready', () => {
     console.log(`Client has been logged into! ${client.user.username}`);
-    startConfiguredJaga(client).catch(error => {
-        console.error("Failed to start configured !jaga voice connection:", error);
+    startCacheCleanupScheduler(client, {
+        cleanupProcessedMessages: cleanupProcessedMessageIds
+    });
+    restoreStayConnections(client).catch(error => {
+        console.error("Failed to restore 24/7 stay voice connections:", error);
     });
     registerHelpSlashCommand(client).catch(error => {
         console.error("Failed to register /help slash command:", error.message);
@@ -690,9 +756,10 @@ client.on('messageCreate', async (message) => {
 
     if (await handleStudyScheduleCommand(message)) return;
     if (await handleHelpCommand(message)) return;
+    if (await handleClearCacheCommand(message, { cleanupProcessedMessages: cleanupProcessedMessageIds })) return;
     if (await handleVoiceBanCommand(message)) return;
     if (await handleMusicCommand(message)) return;
-    if (await handleJagaCommand(message)) return;
+    if (await handleStayCommand(message)) return;
     if (await handleRandomCodeCommand(message)) return;
     if (await handlePlayMusicCommand(message)) return;
     if (await handleRulesCommand(message)) return;
