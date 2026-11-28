@@ -213,8 +213,8 @@ async function run() {
     assert.strictEqual(await handleStayCommand(helpMsg), true);
     assert.match(helpMsg.replies[0], /Stay 24\/7/);
 
-    // 4. Bare `stay` activates 24/7 stay, streams silence Opus frames, and persists to disk.
-    const stayMsg = createMessage("stay", voiceChannel1);
+    // 4. Bare `!stay` uses the member's current voice channel and persists it.
+    const stayMsg = createMessage("!stay", voiceChannel1);
     assert.strictEqual(await handleStayCommand(stayMsg), true);
     assert.strictEqual(joinCount, 1);
     assert.deepStrictEqual(joinOptions, {
