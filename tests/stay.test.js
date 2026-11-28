@@ -171,7 +171,7 @@ const {
 } = require("../commands/stay");
 const { handlePlayMusicCommand, getQueue } = require("../commands/playmusic");
 
-function createMessage(content, voiceChannel) {
+function createMessage(content, voiceChannel, replyError = null) {
     const replies = [];
     return {
         content,
@@ -191,6 +191,7 @@ function createMessage(content, voiceChannel) {
         replies,
         async reply(text) {
             replies.push(text);
+            if (replyError) throw replyError;
         }
     };
 }
@@ -280,6 +281,14 @@ async function run() {
     assert.strictEqual(joinCount, joinsBeforeDestroy + 1, "bot must auto-rejoin if connection is unexpectedly destroyed");
 
     // 12. Bot moved out of channel triggers auto-reconnect right back to stay channel.
+    assert.strictEqual(
+        await handleStayVoiceStateUpdate(
+            { channelId: voiceChannel1.id },
+            { id: "bot-1", guild: { id: guild.id }, channelId: null }
+        ),
+        false,
+        "a stale voice update from a different channel must not trigger stay reconnect"
+    );
     const joinsBeforeMove = joinCount;
     guildVoiceStates.set("bot-1", { channelId: voiceChannel1.id });
     assert.strictEqual(
@@ -335,6 +344,13 @@ async function run() {
     const inactiveStatus = createMessage("!stay status", null);
     assert.strictEqual(await handleStayCommand(inactiveStatus), true);
     assert.match(inactiveStatus.replies[0], /NONAKTIF/);
+
+    // 17. A failed voice join must not become an unhandled rejection if its reply fails.
+    failNextJoinCount = 1;
+    const replyFailure = new Error("Channel is not cached");
+    const failedJoinMsg = createMessage(`!stay <#${voiceChannel1.id}>`, null, replyFailure);
+    assert.strictEqual(await handleStayCommand(failedJoinMsg), true);
+    assert.strictEqual(isStayActive(guild.id), false);
 
     console.log("Stay 24/7 command tests passed.");
 }

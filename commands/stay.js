@@ -564,7 +564,9 @@ async function handleStayVoiceStateUpdate(oldState, newState) {
     const target = activeStayChannels.get(guildId);
     if (!target) return false;
 
-    const botLeftTarget = newState.id === target.botUserId && newState.channelId !== target.channelId;
+    const botLeftTarget = newState.id === target.botUserId
+        && oldState?.channelId === target.channelId
+        && newState.channelId !== target.channelId;
     if (botLeftTarget) {
         // Ignore gateway echo from our own teardown while reconnectStay is actively running.
         if (target.reconnecting) return false;
@@ -1065,7 +1067,11 @@ async function handleStayCommand(message) {
         }
     } catch (error) {
         console.error("[Stay] Failed to join voice channel:", error);
-        await message.reply("❌ Bot gagal masuk ke voice channel. Coba lagi sebentar.");
+        try {
+            await message.reply("❌ Bot gagal masuk ke voice channel. Coba lagi sebentar.");
+        } catch (replyError) {
+            console.error("[Stay] Failed to send voice join error reply:", replyError);
+        }
     }
 
     return true;
