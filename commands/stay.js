@@ -178,18 +178,18 @@ function getReconnectDelayMs(attempts) {
     return Math.min(backoff, MAX_RECONNECT_DELAY_MS);
 }
 
-function scheduleReconnect(guildId, target, force = false) {
+function scheduleReconnect(guildId, target, force = false, immediate = false) {
     if (force) target.forceReconnect = true;
     if (!isActiveStayTarget(guildId, target) || target.reconnecting) {
         return;
     }
     if (target.reconnectTimer) {
-        if (!force) return;
+        if (!immediate) return;
         clearTimeout(target.reconnectTimer);
         target.reconnectTimer = null;
     }
 
-    const delay = force ? 0 : getReconnectDelayMs(target.reconnectAttempts);
+    const delay = immediate ? 0 : force ? BASE_RECONNECT_DELAY_MS : getReconnectDelayMs(target.reconnectAttempts);
     target.reconnectTimer = setTimeout(() => {
         target.reconnectTimer = null;
         const reconnect = target.forceReconnect ? reconnectStay : ensureStayConnection;
@@ -582,7 +582,7 @@ async function handleStayVoiceStateUpdate(oldState, newState) {
             ? `moved to channel ${newState.channelId}`
             : "bot voice state cleared (disconnected/kicked)";
         console.warn(`[Stay] Bot left/moved from protected channel ${target.channelId} in guild ${guildId} (${target.lastDisconnectReason}); rejoining.`);
-        scheduleReconnect(guildId, target, true);
+        scheduleReconnect(guildId, target, true, true);
         return true;
     }
 

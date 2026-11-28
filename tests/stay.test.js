@@ -321,6 +321,8 @@ async function run() {
     };
     assert.strictEqual(await restoreStayConnections(client), true);
     assert.strictEqual(isStayActive(guild.id), true, "stay must remain active and retry after transient boot failure");
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.strictEqual(joinCount, joinsBeforeRestore + 1, "startup restore retry should retain its backoff");
     await new Promise(resolve => setTimeout(resolve, 3200));
     assert.strictEqual(joinCount, joinsBeforeRestore + 2, "startup restore must automatically retry after failure");
     assert.strictEqual(currentConnection.joinConfig.channelId, voiceChannel2.id);
