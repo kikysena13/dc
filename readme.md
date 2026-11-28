@@ -59,7 +59,7 @@ Bot Discord untuk komunitas dengan fitur musik, AI chat, leaderboard aktivitas d
 | `!leave`, `!dc`, `!disconnect` | Mematikan mode stay 24/7 (jika aktif) dan membuat bot keluar dari voice channel. |
 
 Bot dan pengguna harus berada di voice channel yang sama. Untuk pencarian judul, bot mencoba Spotify terlebih dahulu lalu menggunakan YouTube jika tersedia.
-`!stay` / `!jaga` membutuhkan izin **Connect** dan **Speak** di voice channel. Target voice channel disimpan otomatis di `data/voice-stay.json` (dan disinkronkan ke GitHub jika `GITHUB_TOKEN` diatur). Kamu juga bisa mengisi `STAY_CHANNEL_ID` (atau `JAGA_CHANNEL_ID`) di Railway Variables sebagai fallback permanen. `STAY_GUILD_ID` / `JAGA_GUILD_ID` opsional jika `DISCORD_GUILD_ID` sudah diatur.
+`!stay` / `!jaga` membutuhkan izin **Connect** dan **Speak** di voice channel. Target voice channel disimpan otomatis di `data/voice-stay.json` (dan disinkronkan ke GitHub jika `GITHUB_TOKEN` diatur). Kamu juga bisa mengisi `STAY_CHANNEL_ID` (atau `JAGA_CHANNEL_ID`) di Railway Variables sebagai target startup; jika diisi, nilainya mengesampingkan target tersimpan untuk server tersebut. `STAY_GUILD_ID` / `JAGA_GUILD_ID` opsional jika `DISCORD_GUILD_ID` sudah diatur.
 
 ### 🧰 Informasi dan utility
 

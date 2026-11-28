@@ -325,14 +325,29 @@ async function run() {
     assert.strictEqual(joinCount, joinsBeforeRestore + 2, "startup restore must automatically retry after failure");
     assert.strictEqual(currentConnection.joinConfig.channelId, voiceChannel2.id);
 
-    // 14. Gateway reconcile heals dropped connections.
+    // 14. Explicit Railway config overrides a stale persisted channel for its guild.
+    stopStay(guild.id, { persist: false });
+    if (currentConnection) currentConnection.destroy();
+    const previousStayChannelId = process.env.STAY_CHANNEL_ID;
+    const previousStayGuildId = process.env.STAY_GUILD_ID;
+    process.env.STAY_CHANNEL_ID = voiceChannel1.id;
+    process.env.STAY_GUILD_ID = guild.id;
+    assert.strictEqual(await restoreStayConnections(client), true);
+    assert.strictEqual(getStayTarget(guild.id).channelId, voiceChannel1.id);
+    assert.strictEqual(currentConnection.joinConfig.channelId, voiceChannel1.id);
+    if (previousStayChannelId === undefined) delete process.env.STAY_CHANNEL_ID;
+    else process.env.STAY_CHANNEL_ID = previousStayChannelId;
+    if (previousStayGuildId === undefined) delete process.env.STAY_GUILD_ID;
+    else process.env.STAY_GUILD_ID = previousStayGuildId;
+
+    // 15. Gateway reconcile heals dropped connections.
     currentConnection = null;
     const joinsBeforeReconcile = joinCount;
     reconcileStayConnections(client);
     await new Promise(resolve => setTimeout(resolve, 50));
     assert.strictEqual(joinCount, joinsBeforeReconcile + 1, "reconcileStayConnections should heal missing voice connection");
 
-    // 15. !stay off disables stay, removes persisted entry, and disconnects.
+    // 16. !stay off disables stay, removes persisted entry, and disconnects.
     const offMsg = createMessage("!stay off", null);
     assert.strictEqual(await handleStayCommand(offMsg), true);
     assert.strictEqual(isStayActive(guild.id), false);
@@ -340,12 +355,12 @@ async function run() {
     assert.deepStrictEqual(readStayStore(), {});
     assert.match(offMsg.replies[0], /dimatikan/);
 
-    // 16. !stay status now shows inactive.
+    // 17. !stay status now shows inactive.
     const inactiveStatus = createMessage("!stay status", null);
     assert.strictEqual(await handleStayCommand(inactiveStatus), true);
     assert.match(inactiveStatus.replies[0], /NONAKTIF/);
 
-    // 17. A failed voice join must not become an unhandled rejection if its reply fails.
+    // 18. A failed voice join must not become an unhandled rejection if its reply fails.
     failNextJoinCount = 1;
     const replyFailure = new Error("Channel is not cached");
     const failedJoinMsg = createMessage(`!stay <#${voiceChannel1.id}>`, null, replyFailure);

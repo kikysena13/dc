@@ -796,14 +796,12 @@ async function restoreStayConnections(client) {
             throw new Error("Set STAY_GUILD_ID, JAGA_GUILD_ID, or DISCORD_GUILD_ID to use STAY_CHANNEL_ID/JAGA_CHANNEL_ID.");
         }
 
-        if (!targetsByGuild.has(envGuildId)) {
-            targetsByGuild.set(envGuildId, {
-                channelId: envChannelId,
-                requestedBy: null,
-                enabledAt: null,
-                fromEnv: true
-            });
-        }
+        targetsByGuild.set(envGuildId, {
+            channelId: envChannelId,
+            requestedBy: null,
+            enabledAt: null,
+            fromEnv: true
+        });
     }
 
     if (targetsByGuild.size === 0) {
