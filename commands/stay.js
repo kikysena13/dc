@@ -180,11 +180,16 @@ function getReconnectDelayMs(attempts) {
 
 function scheduleReconnect(guildId, target, force = false) {
     if (force) target.forceReconnect = true;
-    if (!isActiveStayTarget(guildId, target) || target.reconnecting || target.reconnectTimer) {
+    if (!isActiveStayTarget(guildId, target) || target.reconnecting) {
         return;
     }
+    if (target.reconnectTimer) {
+        if (!force) return;
+        clearTimeout(target.reconnectTimer);
+        target.reconnectTimer = null;
+    }
 
-    const delay = force ? BASE_RECONNECT_DELAY_MS : getReconnectDelayMs(target.reconnectAttempts);
+    const delay = force ? 0 : getReconnectDelayMs(target.reconnectAttempts);
     target.reconnectTimer = setTimeout(() => {
         target.reconnectTimer = null;
         const reconnect = target.forceReconnect ? reconnectStay : ensureStayConnection;
@@ -536,8 +541,10 @@ async function reconnectStay(guildId, target) {
         shouldRetry = true;
     } finally {
         target.reconnecting = false;
-        if (shouldRetry || target.forceReconnect) {
-            scheduleReconnect(guildId, target);
+        const forceReconnect = target.forceReconnect;
+        target.forceReconnect = false;
+        if (shouldRetry || forceReconnect) {
+            scheduleReconnect(guildId, target, forceReconnect);
         }
     }
 }

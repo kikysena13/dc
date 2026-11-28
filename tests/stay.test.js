@@ -298,7 +298,7 @@ async function run() {
         ),
         true
     );
-    await new Promise(resolve => setTimeout(resolve, 3150));
+    await new Promise(resolve => setTimeout(resolve, 750));
     assert.strictEqual(joinCount, joinsBeforeMove + 1, "bot must snap back when moved out of stay channel");
     assert.strictEqual(currentConnection.joinConfig.channelId, voiceChannel2.id);
 
